@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>체육 대진표 메이커</title>
+<meta name="description" content="체육 수업용 리그전·토너먼트 대진표 생성기. 랜덤·시드·직접 배정, 결과 기록, 자동 저장과 이어하기를 지원합니다.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8590c'/%3E%3Cpath d='M6 9h7v5h6V9h7M13 14v9h6' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f6f4ef; --surface:#ffffff; --ink:#1d2433; --muted:#667085; --line:#e3dfd6; --line-strong:#cfc9bc;
+  --accent:#e8590c; --accent-ink:#ffffff; --accent-soft:#fff1e8;
+  --win:#0f7a4d; --win-soft:#e6f6ee; --danger:#c92a2a; --gold:#b7791f; --silver:#718096; --bronze:#a0522d;
+  --shadow:0 1px 2px rgba(20,20,40,.06),0 6px 18px rgba(20,20,40,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#14171f; --surface:#1d212c; --ink:#eef0f5; --muted:#9aa3b5; --line:#2e3443; --line-strong:#434b5e;
+    --accent:#ff8a4c; --accent-ink:#1a1206; --accent-soft:#3a2418;
+    --win:#4cd694; --win-soft:#17352a; --danger:#ff7676; --gold:#e6b450; --silver:#a0aec0; --bronze:#d9946a;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'Pretendard','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1360px;margin:0 auto;padding:16px}
+.print-only{display:none}
+
+/* buttons & fields */
+.btn{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(.95)}
+.btn.danger{color:var(--danger)}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:var(--surface);border-color:var(--line)}
+.btn.sm{min-height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.btn.lg{min-height:48px;padding:0 22px;font-size:16px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span,.legend{font-weight:700;font-size:14px}
+input[type=text],input[type=number],textarea,select{width:100%;min-height:40px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface)}
+textarea{resize:vertical;line-height:1.6}
+.hint{color:var(--muted);font-size:13px}
+
+/* home */
+.hero{padding:28px 4px 18px}
+.hero h1{font-size:30px;letter-spacing:-.02em}
+.hero p{color:var(--muted);margin-top:6px;max-width:60ch}
+.toolrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0 18px}
+.resume{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:14px 16px;margin-bottom:18px}
+.resume b{font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.tcard h3{font-size:17px;line-height:1.3;word-break:keep-all}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.tag.alt{background:var(--win-soft);color:var(--win)}
+progress{width:100%;height:8px;border-radius:99px;overflow:hidden;appearance:none;border:0;background:var(--line)}
+progress::-webkit-progress-bar{background:var(--line)}
+progress::-webkit-progress-value{background:var(--win)}
+progress::-moz-progress-bar{background:var(--win)}
+.tcard .row{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.empty{text-align:center;padding:40px 16px;background:var(--surface);border:1px dashed var(--line-strong);border-radius:14px}
+.empty p{color:var(--muted);margin:6px 0 16px}
+.note{font-size:13px;color:var(--muted);margin-top:22px;padding:12px 14px;border-left:3px solid var(--line-strong);background:var(--surface);border-radius:0 10px 10px 0}
+
+/* create form */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:var(--shadow)}
+.form{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.form h2{font-size:22px}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:8px}
+.choice{position:relative}
+.choice input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0}
+.choice div{border:2px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);height:100%}
+.choice b{display:block}
+.choice small{color:var(--muted);font-size:12.5px;line-height:1.35;display:block;margin-top:2px}
+.choice input:checked+div{border-color:var(--accent);background:var(--accent-soft)}
+.choice input:focus-visible+div{outline:3px solid var(--accent);outline-offset:2px}
+.inline{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.inline .field{width:92px}
+.sub{background:var(--bg);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+details.helper{background:var(--bg);border-radius:12px;padding:10px 14px}
+details.helper summary{cursor:pointer;font-weight:700}
+.formbtns{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.count{font-weight:700;color:var(--accent)}
+
+/* tournament page */
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.top .left{display:flex;gap:10px;align-items:center;flex-wrap:wrap;min-width:0}
+.title h1{font-size:24px;line-height:1.25;cursor:text;word-break:keep-all}
+.title h1:hover{text-decoration:underline dotted}
+.title .tags{margin-top:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+details.more{position:relative}
+details.more summary{list-style:none}
+details.more summary::-webkit-details-marker{display:none}
+details.more .menu{position:absolute;right:0;top:44px;z-index:30;min-width:200px;background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column}
+details.more .menu button{background:none;border:0;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+details.more .menu button:hover{background:var(--bg)}
+details.more .menu .danger{color:var(--danger)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.bar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.bar.locked{background:var(--bg);border-style:dashed}
+.bar .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar select{width:auto}
+.podium{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.podium div{flex:1 1 150px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px;box-shadow:var(--shadow)}
+.podium small{font-weight:700;color:var(--muted)}
+.podium b{display:block;font-size:18px;word-break:keep-all}
+.podium .p1{border-color:var(--gold);background:var(--accent-soft)}
+.podium .p1 small{color:var(--gold)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.panel h2{font-size:16px;margin-bottom:10px}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.plist li{display:flex;gap:6px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.plist li.over{outline:2px dashed var(--accent)}
+.plist .no{width:22px;text-align:center;font-size:12px;color:var(--muted);font-weight:700;flex:none}
+.plist .fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.plist input{min-height:34px;padding:4px 8px;border-radius:8px}
+.plist .mem{font-size:12.5px}
+.plist .seed{width:58px;flex:none;text-align:center}
+.plist .handle{cursor:grab;color:var(--muted);flex:none;padding:6px 2px;user-select:none;touch-action:none}
+.iconbtn{min-width:30px;min-height:30px;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;line-height:1;flex:none}
+.iconbtn:hover{border-color:var(--ink)}
+.addrow{display:flex;gap:6px;margin-top:10px}
+.addrow input{flex:1}
+
+/* knockout bracket */
+.scroll{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);max-height:calc(100vh - 140px)}
+.bracket{position:relative}
+.bracket svg{position:absolute;inset:0;pointer-events:none}
+.rlabel{position:absolute;top:0;text-align:center;font-weight:800;font-size:13px;letter-spacing:.04em;color:var(--muted)}
+.match{position:absolute;width:232px;height:84px;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(20,20,40,.05)}
+.match.done{border-color:var(--win)}
+.match.isbye{background:var(--bg);opacity:.9}
+.side{height:50%;display:flex;align-items:center;gap:6px;padding-right:6px;min-height:0}
+.side+.side{border-top:1px solid var(--line)}
+.side .slot{flex:1;min-width:0;height:100%;display:flex;align-items:center;padding:0 10px}
+.side .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:14px}
+.side .nm.bye,.side .nm.tbd{font-weight:500;font-style:italic;color:var(--muted)}
+.side.win{background:var(--win-soft)}
+.side.win .nm{color:var(--win);font-weight:800}
+.side.lose .nm{color:var(--muted);font-weight:500}
+.side .slot[data-act]{cursor:pointer}
+.side .slot[data-act]:hover{background:var(--accent-soft)}
+.side.sel .slot{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.slot.over{background:var(--accent-soft)}
+.sc{width:44px!important;min-height:28px!important;height:28px;padding:0 4px!important;text-align:center;border-radius:6px!important;flex:none;-moz-appearance:textfield}
+.sc::-webkit-outer-spin-button,.sc::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.sct{width:30px;text-align:center;font-weight:800;flex:none}
+.wbtn{width:28px;height:28px;border-radius:50%;border:1px solid var(--line-strong);background:var(--surface);font-size:12px;font-weight:800;cursor:pointer;flex:none;padding:0}
+.wbtn:hover{border-color:var(--win);color:var(--win)}
+.wbtn.on{background:var(--win);border-color:var(--win);color:#fff}
+
+/* league */
+.league-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.rounds{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
+.rcard h3{font-size:13px;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+.lm{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
+.lm:first-of-type{border-top:0}
+.lm .tn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:14px}
+.lm .tn.a{text-align:right}
+.lm .tn.win{color:var(--win);font-weight:800}
+.lm .mid{display:flex;align-items:center;gap:4px}
+.lm .colon{color:var(--muted);font-weight:700}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--surface);min-width:34px;height:30px;font-size:12.5px;font-weight:700;cursor:pointer;padding:0 6px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--win);color:#fff}
+.rest{font-size:12.5px;color:var(--muted);margin-top:6px}
+.stand{position:sticky;top:12px}
+.stand h2,.sched h2{font-size:16px;margin-bottom:8px}
+table.st{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.st th,.st td{padding:7px 6px;text-align:center;font-size:13.5px;border-bottom:1px solid var(--line)}
+.st th{background:var(--bg);font-size:12px;color:var(--muted);font-weight:700}
+.st td.nm{text-align:left;font-weight:700;max-width:140px}
+.st td.nm small{display:block;color:var(--muted);font-weight:500;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st td.pts{font-weight:800}
+.st tr.r1 td.rk{color:var(--gold);font-weight:900}
+.st tr.r2 td.rk{color:var(--silver);font-weight:900}
+.st tr.r3 td.rk{color:var(--bronze);font-weight:900}
+.st tr:last-child td{border-bottom:0}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* present mode */
+.exit-present{display:none}
+body.present .no-present{display:none!important}
+body.present .exit-present{display:inline-flex;position:fixed;top:12px;right:12px;z-index:50}
+body.present .layout{grid-template-columns:1fr}
+body.present .title h1{font-size:34px}
+body.present .scroll{max-height:none}
+body.present .lm .tn{font-size:18px}
+body.present .st th,body.present .st td{font-size:17px;padding:10px 8px}
+body.present .side .nm{font-size:16px}
+
+@media (max-width:1100px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .league-grid{grid-template-columns:minmax(0,1fr)}
+  .stand{position:static}
+}
+main{min-width:0}
+
+@media print{
+  :root{--bg:#fff;--surface:#fff;--ink:#000;--muted:#444;--line:#bbb;--line-strong:#888;--accent:#444;--accent-soft:#eee;--win:#0a6b3f;--win-soft:#e8f5ee}
+  @page{margin:12mm}
+  body{background:#fff}
+  .no-print{display:none!important}
+  .print-only{display:block}
+  .print-head{margin-bottom:10px}
+  .print-head h1{font-size:22px}
+  .wrap{padding:0;max-width:none}
+  .layout{display:block}
+  .scroll{max-height:none;overflow:visible;border:0;box-shadow:none;padding:0}
+  .panel,.rcard,table.st,.match{box-shadow:none}
+  .league-grid{grid-template-columns:1fr 1fr}
+  .stand{position:static}
+  .sc{border:0!important;background:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="importfile" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* ====== 공통 도구 ====== */
+const KEY = 'pe-bracket-v1';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const isId = v => !!v && v !== 'BYE';
+const nextPow2 = n => { let s = 2; while (s < n) s *= 2; return s; };
+const fmtDate = ts => new Date(ts).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/* ====== 저장소 ====== */
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const d = JSON.parse(raw); if (d && Array.isArray(d.tournaments)) return d; }
+  } catch (e) {}
+  return { tournaments: [], lastId: null };
+}
+let db = loadDB();
+let storageOK = true;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch (e) { if (storageOK) { storageOK = false; toast('이 브라우저에 저장하지 못했어요. 「백업 내보내기」로 파일을 꼭 저장해 주세요.'); } }
+}
+let ui = { view: 'home', id: null, sel: null, present: false, drag: null };
+const cur = () => db.tournaments.find(t => t.id === ui.id);
+const P = (t, id) => t.players.find(p => p.id === id);
+const pn = (t, id) => P(t, id)?.name ?? '';
+
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/* ====== 대진 로직 ====== */
+function seedOrder(S) { let o = [1]; while (o.length < S) { const n = o.length * 2 + 1; o = o.flatMap(x => [x, n - x]); } return o; }
+const placeSeeds = (ids, S) => seedOrder(S).map(sd => ids[sd - 1] || null);
+
+function arrange(t, method) {
+  if (method === 'random') { t.players = shuffle(t.players); t.players.forEach(p => p.seed = null); }
+  else if (method === 'seed') {
+    const s = t.players.filter(p => p.seed).sort((a, b) => a.seed - b.seed);
+    const r = shuffle(t.players.filter(p => !p.seed));
+    t.players = [...s, ...r];
+  }
+  if (t.format === 'knockout') t.slots = placeSeeds(t.players.map(p => p.id), nextPow2(t.players.length));
+}
+
+function relayout(t) {
+  const n = t.players.length, S = nextPow2(Math.max(n, 2));
+  const have = new Set(t.players.map(p => p.id));
+  if (S === t.slots.length) {
+    t.slots = t.slots.map(id => have.has(id) ? id : null);
+    const placed = new Set(t.slots.filter(Boolean));
+    t.players.forEach(p => { if (!placed.has(p.id)) { const i = t.slots.indexOf(null); if (i >= 0) { t.slots[i] = p.id; placed.add(p.id); } } });
+  } else {
+    const curIds = t.slots.filter(id => id && have.has(id));
+    const set = new Set(curIds);
+    const extra = t.players.map(p => p.id).filter(id => !set.has(id));
+    t.slots = placeSeeds([...curIds, ...extra], S);
+  }
+}
+
+function hasResults(t) {
+  return Object.values(t.results).some(r => r && ((r.a !== '' && r.a != null) || (r.b !== '' && r.b != null) || r.winner || r.res));
+}
+
+/* 리그전 일정 (서클 방식) */
+function leagueSchedule(t) {
+  let arr = t.players.map(p => p.id);
+  if (arr.length % 2) arr.push(null);
+  const n = arr.length, rounds = [];
+  for (let r = 0; r < n - 1; r++) {
+    const ms = []; let rest = null;
+    for (let i = 0; i < n / 2; i++) {
+      let a = arr[i], b = arr[n - 1 - i];
+      if (a === null || b === null) { rest = a === null ? b : a; continue; }
+      if (i === 0 && r % 2 === 1) [a, b] = [b, a];
+      ms.push({ a, b });
+    }
+    rounds.push({ ms, rest });
+    arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)];
+  }
+  const out = [];
+  rounds.forEach((rd, i) => out.push({ round: i + 1, rest: rd.rest, matches: rd.ms.map(m => ({ key: `${m.a}_${m.b}_1`, a: m.a, b: m.b })) }));
+  if (t.opts.rounds === 2) rounds.forEach((rd, i) => out.push({ round: rounds.length + i + 1, rest: rd.rest, matches: rd.ms.map(m => ({ key: `${m.b}_${m.a}_2`, a: m.b, b: m.a })) }));
+  return out;
+}
+
+function outcome(t, key) {
+  const r = t.results[key]; if (!r) return null;
+  if (t.opts.useScore) {
+    if (r.a === '' || r.a == null || r.b === '' || r.b == null) return null;
+    const a = +r.a, b = +r.b;
+    return { ga: a, gb: b, o: a > b ? 'A' : a < b ? 'B' : 'D' };
+  }
+  return r.res ? { ga: 0, gb: 0, o: r.res } : null;
+}
+
+function standings(t) {
+  const W = t.opts.win, D = t.opts.draw, L = t.opts.loss;
+  const st = new Map(t.players.map(p => [p.id, { id: p.id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }]));
+  const played = [];
+  leagueSchedule(t).forEach(rd => rd.matches.forEach(m => {
+    const o = outcome(t, m.key); if (!o) return;
+    played.push({ a: m.a, b: m.b, o: o.o });
+    const A = st.get(m.a), B = st.get(m.b);
+    A.p++; B.p++; A.gf += o.ga; A.ga += o.gb; B.gf += o.gb; B.ga += o.ga;
+    if (o.o === 'A') { A.w++; B.l++; A.pts += W; B.pts += L; }
+    else if (o.o === 'B') { B.w++; A.l++; B.pts += W; A.pts += L; }
+    else { A.d++; B.d++; A.pts += D; B.pts += D; }
+  }));
+  const rows = [...st.values()].map(r => ({ ...r, gd: r.gf - r.ga }));
+  const base = (x, y) => (y.pts - x.pts) || (y.gd - x.gd) || (y.gf - x.gf);
+  const idx = new Map(t.players.map((p, i) => [p.id, i]));
+  rows.sort((x, y) => base(x, y) || (idx.get(x.id) - idx.get(y.id)));
+  const out = []; let i = 0;
+  while (i < rows.length) {
+    let j = i + 1; while (j < rows.length && base(rows[i], rows[j]) === 0) j++;
+    const grp = rows.slice(i, j);
+    if (grp.length > 1) {
+      const ids = new Set(grp.map(g => g.id)), h = new Map(grp.map(g => [g.id, 0]));
+      played.forEach(g => {
+        if (!ids.has(g.a) || !ids.has(g.b)) return;
+        if (g.o === 'A') h.set(g.a, h.get(g.a) + W);
+        else if (g.o === 'B') h.set(g.b, h.get(g.b) + W);
+        else { h.set(g.a, h.get(g.a) + D); h.set(g.b, h.get(g.b) + D); }
+      });
+      grp.forEach(g => g.h2h = h.get(g.id));
+      grp.sort((x, y) => (y.h2h - x.h2h) || (idx.get(x.id) - idx.get(y.id)));
+    }
+    out.push(...grp); i = j;
+  }
+  out.forEach((r, k) => { const pv = out[k - 1]; r.rank = pv && base(pv, r) === 0 && (pv.h2h ?? 0) === (r.h2h ?? 0) ? pv.rank : k + 1; });
+  return { rows: out, played: played.length };
+}
+
+/* 토너먼트 구조 계산 (결과는 t.results에 저장, 구조는 매번 계산) */
+function koBuild(t, clean) {
+  const S = t.slots.length, R = Math.round(Math.log2(S));
+  let removed = 0;
+  const rounds = [], byKey = {};
+  const drop = key => { if (clean && t.results[key]) { delete t.results[key]; removed++; } };
+  const mk = (key, a, b) => {
+    const m = { key, a, b, winner: null, bye: false, res: null };
+    const r = t.results[key];
+    if (a === 'BYE' || b === 'BYE') {
+      m.bye = true; m.winner = (a === 'BYE' && b === 'BYE') ? 'BYE' : (a === 'BYE' ? b : a);
+      if (r) drop(key);
+    } else if (isId(a) && isId(b)) {
+      if (r && r.pa === a && r.pb === b) { m.res = r; m.winner = (r.winner === a || r.winner === b) ? r.winner : null; }
+      else if (r) drop(key);
+    } else if (r) drop(key);
+    byKey[key] = m; return m;
+  };
+  for (let r = 0; r < R; r++) {
+    const cnt = S >> (r + 1), row = [];
+    for (let m = 0; m < cnt; m++) {
+      let a, b;
+      if (r === 0) { a = t.slots[2 * m] || 'BYE'; b = t.slots[2 * m + 1] || 'BYE'; }
+      else { a = rounds[r - 1][2 * m].winner; b = rounds[r - 1][2 * m + 1].winner; }
+      row.push(mk(`R${r}M${m}`, a, b));
+    }
+    rounds.push(row);
+  }
+  const lose = m => m.bye ? 'BYE' : (isId(m.winner) ? (m.winner === m.a ? m.b : m.a) : null);
+  let third = null;
+  if (t.opts.third && R >= 2) third = mk('T', lose(rounds[R - 2][0]), lose(rounds[R - 2][1]));
+  const fin = rounds[R - 1][0];
+  const champion = isId(fin.winner) ? fin.winner : null;
+  const runner = champion ? (fin.winner === fin.a ? fin.b : fin.a) : null;
+  const thirdW = third && isId(third.winner) ? third.winner : null;
+  let total = 0, done = 0;
+  [...rounds.flat(), ...(third ? [third] : [])].forEach(m => {
+    if (m.a !== 'BYE' && m.b !== 'BYE') { total++; if (isId(m.winner)) done++; }
+  });
+  return { S, R, rounds, third, byKey, champion, runner, thirdW, removed, total, done };
+}
+
+function progressOf(t) {
+  if (t.format === 'knockout') { const k = koBuild(t, false); return { done: k.done, total: k.total }; }
+  let total = 0, done = 0;
+  leagueSchedule(t).forEach(rd => rd.matches.forEach(m => { total++; if (outcome(t, m.key)) done++; }));
+  return { done, total };
+}
+
+/* ====== 결과 입력 ====== */
+function store(t, key, r) {
+  const empty = v => v === '' || v == null;
+  if (empty(r.a) && empty(r.b) && !r.winner && !r.res) delete t.results[key]; else t.results[key] = r;
+}
+function setKoScore(t, key, side, val) {
+  const m = koBuild(t, false).byKey[key]; if (!m || !isId(m.a) || !isId(m.b)) return;
+  let r = t.results[key];
+  if (!r || r.pa !== m.a || r.pb !== m.b) r = { a: '', b: '', winner: null, pa: m.a, pb: m.b };
+  const n = val === '' ? '' : Math.max(0, Math.floor(Number(val)) || 0);
+  r[side] = n;
+  if (r.a !== '' && r.b !== '') r.winner = r.a > r.b ? m.a : r.b > r.a ? m.b : null;
+  store(t, key, r);
+}
+function setKoWinner(t, key, id) {
+  const m = koBuild(t, false).byKey[key]; if (!m || !isId(m.a) || !isId(m.b)) return;
+  let r = t.results[key];
+  if (!r || r.pa !== m.a || r.pb !== m.b) r = { a: '', b: '', winner: null, pa: m.a, pb: m.b };
+  r.winner = r.winner === id ? null : id;
+  store(t, key, r);
+}
+function setLeagueScore(t, key, side, val) {
+  const r = t.results[key] || { a: '', b: '' };
+  r[side] = val === '' ? '' : Math.max(0, Math.floor(Number(val)) || 0);
+  store(t, key, r);
+}
+function setLeagueRes(t, key, v) {
+  if (t.results[key]?.res === v) delete t.results[key]; else t.results[key] = { res: v };
+}
+
+/* ====== 저장 + 다시 그리기 ====== */
+function commit() {
+  const t = cur();
+  if (t) {
+    t.updatedAt = Date.now();
+    if (t.format === 'knockout') {
+      const k = koBuild(t, true);
+      if (k.removed) toast(`선수가 바뀐 경기의 결과 ${k.removed}개를 초기화했어요.`);
+    }
+  }
+  save(); scheduleRender();
+}
+function scheduleRender() {
+  setTimeout(() => {
+    const fid = document.activeElement?.dataset?.fid;
+    rerender();
+    if (fid) { const el = document.querySelector(`[data-fid="${CSS.escape(fid)}"]`); if (el) { el.focus(); el.select && el.select(); } }
+  }, 0);
+}
+function go(view, id) {
+  ui.view = view; if (id !== undefined) ui.id = id; ui.sel = null; ui.present = false;
+  if (view === 't' && id) { db.lastId = id; save(); }
+  rerender(); window.scrollTo(0, 0);
+}
+function rerender() {
+  const sy = window.scrollY, sc = $('.scroll');
+  const sx = sc ? sc.scrollLeft : 0, sty = sc ? sc.scrollTop : 0;
+  if (ui.view === 'home') renderHome(); else if (ui.view === 'create') renderCreate(); else renderTournament();
+  const sc2 = $('.scroll'); if (sc2) { sc2.scrollLeft = sx; sc2.scrollTop = sty; }
+  window.scrollTo(0, sy);
+  document.body.classList.toggle('present', ui.present && ui.view === 't');
+}
+
+/* ====== 화면: 홈 ====== */
+function renderHome() {
+  const list = db.tournaments;
+  const last = db.tournaments.find(t => t.id === db.lastId);
+  const cards = list.map(t => {
+    const pg = progressOf(t);
+    return `<article class="tcard">
+      <div class="tags"><span class="tag">${t.format === 'league' ? '리그전' : '토너먼트'}</span><span class="tag alt">${t.unit === 'team' ? '팀전' : '개인전'}</span></div>
+      <h3>${esc(t.name)}</h3>
+      <p class="hint">참가 ${t.players.length}${t.unit === 'team' ? '팀' : '명'} · 경기 ${pg.done}/${pg.total} 완료</p>
+      <progress max="${pg.total || 1}" value="${pg.done}" aria-label="진행률"></progress>
+      <p class="hint">마지막 수정 ${fmtDate(t.updatedAt)}</p>
+      <div class="row">
+        <button class="btn primary sm" data-act="open" data-id="${t.id}">${pg.done ? '이어서 진행' : '열기'}</button>
+        <button class="btn sm" data-act="dup" data-id="${t.id}" title="명단과 설정은 그대로, 결과만 비워서 새 대회로 복사">복사</button>
+        <button class="btn sm danger" data-act="del" data-id="${t.id}">삭제</button>
+      </div></article>`;
+  }).join('');
+  $('#app').innerHTML = `<div class="wrap">
+    <div class="hero"><h1>체육 대진표 메이커</h1>
+      <p>리그전과 토너먼트 대진표를 만들고, 경기 결과를 기록하고, 다음 수업 시간에 이어서 진행하세요.</p></div>
+    ${last ? `<div class="resume"><div><small class="hint">마지막으로 열었던 대회</small><br><b>${esc(last.name)}</b></div>
+      <button class="btn primary" data-act="open" data-id="${last.id}">이어서 진행하기</button></div>` : ''}
+    <div class="toolrow">
+      <button class="btn primary lg" data-act="new">+ 새 대회 만들기</button>
+      <button class="btn" data-act="import">백업 불러오기</button>
+      <button class="btn" data-act="export-all" ${list.length ? '' : 'disabled'}>전체 백업 내보내기</button>
+    </div>
+    ${list.length ? `<div class="grid">${cards}</div>` : `<div class="empty"><h2>아직 만든 대회가 없어요</h2><p>명렬표만 붙여넣으면 대진표가 바로 만들어집니다.</p><button class="btn primary lg" data-act="new">첫 대회 만들기</button></div>`}
+    <p class="note">기록은 <b>이 컴퓨터의 이 브라우저</b>에 자동 저장됩니다. 다른 기기에서 이어가거나 브라우저 기록을 지우기 전에는 「전체 백업 내보내기」로 파일을 저장해 두세요. 학생 명단은 서버로 전송되지 않습니다.</p>
+  </div>`;
+}
+
+/* ====== 화면: 새 대회 ====== */
+const SAMPLE = ['김민준','이서연','박지호','최예은','정우진','강하늘','조수아','윤도현','임나연','한지민'];
+function renderCreate() {
+  $('#app').innerHTML = `<div class="wrap"><form class="card form" id="cf" onsubmit="return false">
+    <h2>새 대회 만들기</h2>
+    <label class="field"><span>대회 이름</span><input type="text" id="cname" placeholder="예) 2학기 3학년 2반 피구 리그" maxlength="60"></label>
+
+    <fieldset><div class="legend">참가 단위</div><div class="choices">
+      <label class="choice"><input type="radio" name="unit" value="individual" checked><div><b>개인전</b><small>학생 한 명 한 명이 참가</small></div></label>
+      <label class="choice"><input type="radio" name="unit" value="team"><div><b>팀전</b><small>모둠·반 대항 (팀원 표기 가능)</small></div></label>
+    </div></fieldset>
+
+    <fieldset><div class="legend">대진 방식</div><div class="choices">
+      <label class="choice"><input type="radio" name="format" value="league" checked><div><b>리그전</b><small>모두와 한 번씩 대결, 승점으로 순위</small></div></label>
+      <label class="choice"><input type="radio" name="format" value="knockout"><div><b>토너먼트</b><small>지면 탈락하는 단판 승부</small></div></label>
+    </div></fieldset>
+
+    <div class="field"><span>명렬표 <span class="count" id="cnt">0명</span></span>
+      <textarea id="roster" rows="9" placeholder="김민준&#10;이서연&#10;박지호"></textarea>
+      <span class="hint" id="hint-roster"></span>
+      <div><button type="button" class="btn sm" data-act="sample">예시 명단 넣어보기</button></div>
+    </div>
+
+    <details class="helper" id="team-helper" hidden><summary>학생 명단을 랜덤으로 팀 나누기</summary>
+      <div class="sub" style="margin-top:10px">
+        <label class="field"><span>학생 명단 (한 줄에 한 명)</span><textarea id="students" rows="5"></textarea></label>
+        <div class="inline"><label class="field"><span>팀 수</span><input type="number" id="teamcount" min="2" value="4"></label>
+        <button type="button" class="btn" data-act="split">랜덤 팀 편성 → 명렬표에 넣기</button></div>
+      </div></details>
+
+    <fieldset><div class="legend">배정 방식</div><div class="choices">
+      <label class="choice"><input type="radio" name="method" value="random" checked><div><b>랜덤 배정</b><small>무작위로 자리를 섞어요</small></div></label>
+      <label class="choice"><input type="radio" name="method" value="seed"><div><b>시드 배정</b><small>실력 상위 팀을 서로 멀리 배치</small></div></label>
+      <label class="choice"><input type="radio" name="method" value="manual"><div><b>직접 배정</b><small>입력한 순서로 놓고 끌어서 조정</small></div></label>
+    </div>
+    <div class="sub" id="opt-seed" style="margin-top:10px" hidden>
+      <div class="inline"><label class="field"><span>시드 인원</span><input type="number" id="seedcount" min="0" value="4"></label></div>
+      <span class="hint">명렬표 위에서부터 1번 시드, 2번 시드… 순서로 정해져요. 나머지는 랜덤 배치됩니다. 대진표를 만든 뒤 오른쪽 목록에서 시드 번호를 바꿀 수도 있어요.</span>
+    </div></fieldset>
+
+    <div class="sub" id="opt-league">
+      <div class="legend">리그전 설정</div>
+      <div class="choices" style="margin:0">
+        <label class="choice"><input type="radio" name="rounds" value="1" checked><div><b>1회 총당 대결</b><small>모든 상대와 한 번씩</small></div></label>
+        <label class="choice"><input type="radio" name="rounds" value="2"><div><b>2회 총당 대결</b><small>모든 상대와 두 번씩</small></div></label>
+      </div>
+      <div class="inline">
+        <label class="field"><span>승 승점</span><input type="number" id="pw" value="3" min="0"></label>
+        <label class="field"><span>무 승점</span><input type="number" id="pd" value="1" min="0"></label>
+        <label class="field"><span>패 승점</span><input type="number" id="pl" value="0" min="0"></label>
+      </div>
+      <span class="hint">순위 기준: 승점 → 득실차 → 다득점 → 승자승</span>
+    </div>
+
+    <div class="sub" id="opt-ko" hidden>
+      <div class="legend">토너먼트 설정</div>
+      <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="third" checked> 3·4위전 진행 (준결승 패자끼리)</label>
+      <span class="hint">참가 수가 2의 거듭제곱(4, 8, 16…)이 아니면 부전승이 자동 배정돼요.</span>
+    </div>
+
+    <fieldset><div class="legend">경기 결과 기록 방식</div><div class="choices">
+      <label class="choice"><input type="radio" name="score" value="score" checked><div><b>점수 입력</b><small>득실차까지 순위에 반영</small></div></label>
+      <label class="choice"><input type="radio" name="score" value="wl"><div><b>승·패만 기록</b><small>점수 없이 버튼으로 결과 선택</small></div></label>
+    </div></fieldset>
+
+    <div class="formbtns"><button type="button" class="btn" data-act="home">취소</button><button type="button" class="btn primary lg" data-act="create">대진표 만들기</button></div>
+  </form></div>`;
+  syncForm();
+}
+function syncForm() {
+  const f = $('#cf'); if (!f) return;
+  const v = n => f.querySelector(`[name=${n}]:checked`)?.value;
+  const unit = v('unit'), fmt = v('format'), method = v('method');
+  $('#opt-seed').hidden = method !== 'seed';
+  $('#opt-league').hidden = fmt !== 'league';
+  $('#opt-ko').hidden = fmt !== 'knockout';
+  $('#team-helper').hidden = unit !== 'team';
+  $('#hint-roster').textContent = unit === 'team'
+    ? '한 줄에 한 팀. 「팀명: 팀원1, 팀원2」처럼 쓰면 팀원도 함께 저장돼요.'
+    : '한 줄에 한 명씩 적거나, 엑셀의 이름 열을 복사해서 붙여넣으세요.';
+  const n = parseRoster($('#roster').value, unit).length;
+  $('#cnt').textContent = n + (unit === 'team' ? '팀' : '명');
+  $('#seedcount').max = Math.max(n, 1);
+}
+function parseRoster(text, unit) {
+  const seen = new Map(), out = [];
+  text.split(/\r?\n/).map(s => s.replace(/\t+/g, ' ').trim()).filter(Boolean).forEach(line => {
+    let name = line, members = '';
+    if (unit === 'team') { const m = line.match(/^(.*?)[:：]\s*(.*)$/); if (m) { name = m[1].trim(); members = m[2].trim(); } }
+    if (!name) return;
+    const c = (seen.get(name) || 0) + 1; seen.set(name, c);
+    out.push({ id: uid(), name: c > 1 ? `${name} (${c})` : name, members, seed: null });
+  });
+  return out;
+}
+function createFromForm() {
+  const f = $('#cf'), v = n => f.querySelector(`[name=${n}]:checked`)?.value;
+  const unit = v('unit'), format = v('format'), method = v('method');
+  const players = parseRoster($('#roster').value, unit);
+  if (players.length < 2) return toast('참가자를 2명(팀) 이상 입력해 주세요.');
+  if (players.length > 64) return toast('한 대회에는 최대 64명(팀)까지 넣을 수 있어요.');
+  const int = (sel, d) => { const x = parseInt($(sel).value, 10); return Number.isFinite(x) && x >= 0 ? x : d; };
+  const t = {
+    id: uid(), name: $('#cname').value.trim() || `${format === 'league' ? '리그전' : '토너먼트'} ${new Date().toLocaleDateString('ko-KR')}`,
+    createdAt: Date.now(), updatedAt: Date.now(), unit, format, players, slots: [], results: {},
+    opts: { rounds: +v('rounds') === 2 ? 2 : 1, win: int('#pw', 3), draw: int('#pd', 1), loss: int('#pl', 0), useScore: v('score') !== 'wl', third: $('#third').checked }
+  };
+  if (method === 'seed') {
+    const k = Math.min(int('#seedcount', 0), players.length);
+    players.slice(0, k).forEach((p, i) => p.seed = i + 1);
+  }
+  arrange(t, method);
+  db.tournaments.unshift(t); save();
+  go('t', t.id); toast('대진표를 만들었어요.');
+}
+
+/* ====== 화면: 대회 ====== */
+function renderTournament() {
+  const t = cur(); if (!t) { ui.view = 'home'; return renderHome(); }
+  const locked = hasResults(t), pg = progressOf(t), pres = ui.present;
+  const unitWord = t.unit === 'team' ? '팀' : '명';
+  const head = `<div class="top no-present no-print">
+      <div class="left"><button class="btn ghost" data-act="home">← 대회 목록</button>
+        <div class="title"><h1 data-act="rename" title="클릭해서 이름 바꾸기">${esc(t.name)}</h1>
+        <div class="tags"><span class="tag">${t.format === 'league' ? '리그전' : '토너먼트'}</span><span class="tag alt">${t.unit === 'team' ? '팀전' : '개인전'}</span><span class="tag">경기 ${pg.done}/${pg.total}</span></div></div></div>
+      <div class="actions">
+        <button class="btn" data-act="print">인쇄</button>
+        <button class="btn" data-act="present">발표 모드</button>
+        <button class="btn" data-act="export-one">내보내기</button>
+        <details class="more"><summary class="btn">더보기 ▾</summary><div class="menu">
+          <button data-act="reset">결과 모두 초기화</button>
+          <button data-act="dup" data-id="${t.id}">복사해서 새 대회 만들기</button>
+          <button class="danger" data-act="del" data-id="${t.id}">이 대회 삭제</button></div></details>
+      </div></div>
+    <div class="print-only print-head"><h1>${esc(t.name)}</h1><p>${t.format === 'league' ? '리그전' : '토너먼트'} · ${t.unit === 'team' ? '팀전' : '개인전'} · ${new Date().toLocaleDateString('ko-KR')}</p></div>
+    ${pres ? `<div class="title" style="margin-bottom:14px"><h1>${esc(t.name)}</h1></div>` : ''}
+    <button class="btn primary exit-present" data-act="exit-present">발표 모드 끝내기 (Esc)</button>`;
+
+  let bar = '';
+  if (!pres) {
+    bar = locked
+      ? `<div class="bar locked no-print"><div><b>편성 잠김</b> · 결과가 입력되어 대진을 바꿀 수 없어요.</div>
+          <div class="btns"><button class="btn sm" data-act="reset">편성 다시 하기 (결과 모두 초기화)</button></div></div>`
+      : `<div class="bar no-print"><div><b>편성</b> · 아직 결과가 없어서 자유롭게 바꿀 수 있어요.</div>
+          <div class="btns"><button class="btn sm" data-act="arr-random">랜덤으로 섞기</button><button class="btn sm" data-act="arr-seed">시드대로 배치</button>
+          ${t.format === 'league' ? `<label class="hint">대결 횟수 <select data-chg="rounds"><option value="1"${t.opts.rounds === 1 ? ' selected' : ''}>1회</option><option value="2"${t.opts.rounds === 2 ? ' selected' : ''}>2회</option></select></label>`
+            : `<label class="hint" style="display:flex;gap:6px;align-items:center"><input type="checkbox" data-chg="third" ${t.opts.third ? 'checked' : ''}> 3·4위전</label>`}</div>
+          <p class="hint">${t.format === 'knockout' ? '대진표의 1라운드 칸을 끌어다 놓거나, 두 칸을 차례로 눌러 자리를 바꾸세요. (터치 기기는 두 칸을 차례로 누르면 돼요)' : '오른쪽 참가자 목록에서 ▲▼ 버튼이나 끌어서 순서를 바꾸면 일정이 달라져요.'}</p></div>`;
+  }
+  const main = t.format === 'knockout' ? renderKO(t) : renderLeague(t);
+  const aside = pres ? '' : renderPanel(t, locked, unitWord);
+  $('#app').innerHTML = `<div class="wrap">${head}<div class="layout"><main>${bar}${main}</main>${aside}</div></div>`;
+}
+
+function renderPanel(t, locked, unitWord) {
+  const league = t.format === 'league';
+  const rows = t.players.map((p, i) => `<li data-drop="pl:${i}">
+      ${league && !locked ? `<span class="handle" draggable="true" data-drag="pl:${i}" title="끌어서 순서 바꾸기">⋮⋮</span>` : ''}
+      <span class="no">${i + 1}</span>
+      <div class="fields">
+        <input type="text" value="${esc(p.name)}" data-chg="pname" data-id="${p.id}" aria-label="이름" maxlength="40">
+        ${t.unit === 'team' ? `<input type="text" class="mem" value="${esc(p.members)}" placeholder="팀원" data-chg="pmem" data-id="${p.id}" aria-label="팀원">` : ''}
+      </div>
+      ${locked ? '' : `<input type="number" class="seed" min="1" value="${p.seed ?? ''}" placeholder="시드" data-chg="pseed" data-id="${p.id}" aria-label="시드 번호">`}
+      ${league && !locked ? `<button class="iconbtn" data-act="up" data-i="${i}" aria-label="위로" ${i === 0 ? 'disabled' : ''}>▲</button><button class="iconbtn" data-act="down" data-i="${i}" aria-label="아래로" ${i === t.players.length - 1 ? 'disabled' : ''}>▼</button>` : ''}
+      ${locked ? '' : `<button class="iconbtn" data-act="rm" data-i="${i}" aria-label="삭제" title="삭제">✕</button>`}
+    </li>`).join('');
+  return `<aside class="panel no-print"><h2>참가자 ${t.players.length}${unitWord}</h2>
+    <ol class="plist">${rows}</ol>
+    ${locked ? `<p class="hint" style="margin-top:8px">이름·팀원은 언제든 고칠 수 있어요. 추가/삭제/시드는 편성이 잠기지 않았을 때만 가능합니다.</p>`
+      : `<div class="addrow"><input type="text" id="newname" placeholder="${t.unit === 'team' ? '팀 이름 추가' : '이름 추가'}" maxlength="40"><button class="btn" data-act="add">추가</button></div>
+         <p class="hint" style="margin-top:8px">시드 번호를 적고 「시드대로 배치」를 누르면 번호가 작은 순서대로 배치돼요. 비워두면 랜덤입니다.</p>`}
+  </aside>`;
+}
+
+/* --- 토너먼트 그리기 --- */
+function roundName(k, r) { const teams = k.S >> r; return teams === 2 ? '결승' : teams === 4 ? '준결승' : `${teams}강`; }
+
+function koCard(t, mt, left, top, slotBase, locked) {
+  const real = isId(mt.a) && isId(mt.b);
+  const sides = ['a', 'b'].map((s, si) => {
+    const v = mt[s];
+    const win = isId(v) && mt.winner === v, lose = isId(v) && isId(mt.winner) && mt.winner !== v;
+    const idx = slotBase != null ? slotBase + si : null;
+    const slotable = idx != null && !locked && !ui.present;
+    const attr = slotable ? ` data-act="slot" data-idx="${idx}" data-drag="slot:${idx}" data-drop="slot:${idx}" draggable="true"` : '';
+    const nm = v === 'BYE' ? '<span class="nm bye">부전승</span>'
+      : isId(v) ? `<span class="nm" title="${esc(P(t, v)?.members || '')}">${esc(pn(t, v))}</span>`
+      : '<span class="nm tbd">대기</span>';
+    let ctl = '';
+    if (real) {
+      if (t.opts.useScore) {
+        const val = mt.res ? mt.res[s] : '';
+        ctl = ui.present ? `<span class="sct">${val ?? ''}</span>`
+          : `<input class="sc" type="number" min="0" inputmode="numeric" value="${val ?? ''}" data-chg="kscore" data-key="${mt.key}" data-side="${s}" data-fid="${mt.key}${s}" aria-label="${esc(pn(t, v))} 점수">`;
+      }
+      if (!ui.present) ctl += `<button class="wbtn${win ? ' on' : ''}" data-act="ko-win" data-key="${mt.key}" data-id="${v}" data-fid="${mt.key}${s}w" title="${esc(pn(t, v))} 승리 처리" aria-pressed="${win}">승</button>`;
+    }
+    return `<div class="side${win ? ' win' : ''}${lose ? ' lose' : ''}${idx != null && ui.sel === idx ? ' sel' : ''}"><div class="slot"${attr}>${nm}</div>${ctl}</div>`;
+  }).join('');
+  return `<div class="match${mt.bye ? ' isbye' : ''}${real && isId(mt.winner) ? ' done' : ''}" style="left:${left}px;top:${top}px">${sides}</div>`;
+}
+
+function renderKO(t) {
+  const k = koBuild(t, false), locked = hasResults(t);
+  const CW = 232, CH = 84, GX = 64, GY = 18, TOP = 32;
+  const { S, R } = k, yc = [];
+  for (let r = 0; r < R; r++) {
+    yc[r] = []; const cnt = S >> (r + 1);
+    for (let m = 0; m < cnt; m++) yc[r][m] = r === 0 ? m * (CH + GY) + CH / 2 : (yc[r - 1][2 * m] + yc[r - 1][2 * m + 1]) / 2;
+  }
+  const width = R * CW + (R - 1) * GX;
+  let height = (S / 2) * (CH + GY) - GY, thirdTop = null;
+  const showThird = k.third && !k.third.bye;
+  if (showThird) { thirdTop = yc[R - 1][0] + CH / 2 + 64; height = Math.max(height, thirdTop + CH); }
+  let cards = '', labels = '', lines = '';
+  for (let r = 0; r < R; r++) {
+    const x = r * (CW + GX);
+    labels += `<div class="rlabel" style="left:${x}px;width:${CW}px">${roundName(k, r)}</div>`;
+    k.rounds[r].forEach((mt, m) => {
+      cards += koCard(t, mt, x, TOP + yc[r][m] - CH / 2, r === 0 ? 2 * m : null, locked);
+      if (r > 0) {
+        [2 * m, 2 * m + 1].forEach(fi => {
+          const f = k.rounds[r - 1][fi], xs =(r - 1) * (CW + GX) + CW, xm = xs + GX / 2;
+          const y1 = TOP + yc[r - 1][fi], y2 = TOP + yc[r][m];
+          const col = isId(f.winner) ? 'var(--win)' : 'var(--line-strong)';
+          lines += `<path d="M${xs} ${y1} H${xm} V${y2} H${x}" fill="none" stroke="${col}" stroke-width="2"/>`;
+        });
+      }
+    });
+  }
+  if (showThird) {
+    const x = (R - 1) * (CW + GX);
+    labels += `<div class="rlabel" style="left:${x}px;width:${CW}px;top:${TOP + thirdTop - 24}px">3·4위전</div>`;
+    cards += koCard(t, k.third, x, TOP + thirdTop, null, locked);
+  }
+  const nm = id => id ? esc(pn(t, id)) : '–';
+  const podium = k.champion ? `<div class="podium"><div class="p1"><small>우승</small><b>${nm(k.champion)}</b></div><div><small>준우승</small><b>${nm(k.runner)}</b></div>${t.opts.third && k.thirdW ? `<div><small>3위</small><b>${nm(k.thirdW)}</b></div>` : ''}</div>` : '';
+  return `${podium}<div class="scroll"><div class="bracket" style="width:${width}px;height:${TOP + height}px">
+    <svg width="${width}" height="${TOP + height}" aria-hidden="true">${lines}</svg>${labels}${cards}</div></div>`;
+}
+
+/* --- 리그전 그리기 --- */
+function renderLeague(t) {
+  const sched = leagueSchedule(t), pres = ui.present;
+  const rounds = sched.map(rd => {
+    const rows = rd.matches.map(m => {
+      const o = outcome(t, m.key), r = t.results[m.key] || {};
+      const A = esc(pn(t, m.a)), B = esc(pn(t, m.b));
+      const wa = o && o.o === 'A' ? ' win' : '', wb = o && o.o === 'B' ? ' win' : '';
+      let mid;
+      if (t.opts.useScore) {
+        mid = pres ? `<span class="sct">${r.a ?? ''}</span><span class="colon">:</span><span class="sct">${r.b ?? ''}</span>`
+          : `<input class="sc" type="number" min="0" inputmode="numeric" value="${r.a ?? ''}" data-chg="lscore" data-key="${m.key}" data-side="a" data-fid="${m.key}a" aria-label="${A} 점수"><span class="colon">:</span><input class="sc" type="number" min="0" inputmode="numeric" value="${r.b ?? ''}" data-chg="lscore" data-key="${m.key}" data-side="b" data-fid="${m.key}b" aria-label="${B} 점수">`;
+      } else {
+        const res = r.res;
+        mid = pres ? `<span class="sct">${res === 'A' ? '승 ·' : res === 'B' ? '· 승' : res === 'D' ? '무' : 'vs'}</span>`
+          : `<div class="seg"><button data-act="lres" data-key="${m.key}" data-v="A" class="${res === 'A' ? 'on' : ''}" title="${A} 승">승</button><button data-act="lres" data-key="${m.key}" data-v="D" class="${res === 'D' ? 'on' : ''}">무</button><button data-act="lres" data-key="${m.key}" data-v="B" class="${res === 'B' ? 'on' : ''}" title="${B} 승">승</button></div>`;
+      }
+      return `<div class="lm"><span class="tn a${wa}" title="${esc(P(t, m.a)?.members || '')}">${A}</span><span class="mid">${mid}</span><span class="tn b${wb}" title="${esc(P(t, m.b)?.members || '')}">${B}</span></div>`;
+    }).join('');
+    return `<div class="rcard"><h3>${rd.round}라운드</h3>${rows}${rd.rest ? `<p class="rest">휴식: ${esc(pn(t, rd.rest))}</p>` : ''}</div>`;
+  }).join('');
+  const sd = standings(t);
+  const body = sd.rows.map(r => {
+    const p = P(t, r.id), sh = sd.played > 0;
+    return `<tr class="r${sh && r.rank <= 3 ? r.rank : ''}"><td class="rk">${sh ? r.rank : '–'}</td><td class="nm">${esc(p.name)}${p.members ? `<small>${esc(p.members)}</small>` : ''}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>${t.opts.useScore ? `<td>${r.gf}</td><td>${r.ga}</td><td>${r.gd > 0 ? '+' : ''}${r.gd}</td>` : ''}<td class="pts">${r.pts}</td></tr>`;
+  }).join('');
+  const pg = progressOf(t);
+  const champ = pg.total && pg.done === pg.total && sd.rows[0] && sd.rows[1] && sd.rows[0].rank !== sd.rows[1].rank
+    ? `<div class="podium"><div class="p1"><small>우승</small><b>${esc(pn(t, sd.rows[0].id))}</b></div><div><small>준우승</small><b>${esc(pn(t, sd.rows[1].id))}</b></div>${sd.rows[2] ? `<div><small>3위</small><b>${esc(pn(t, sd.rows[2].id))}</b></div>` : ''}</div>` : '';
+  return `${champ}<div class="league-grid">
+    <section class="sched"><h2>경기 일정</h2><div class="rounds">${rounds}</div></section>
+    <section class="stand"><h2>순위표</h2><table class="st"><thead><tr><th>순위</th><th style="text-align:left">${t.unit === 'team' ? '팀' : '이름'}</th><th>경기</th><th>승</th><th>무</th><th>패</th>${t.opts.useScore ? '<th>득</th><th>실</th><th>득실</th>' : ''}<th>승점</th></tr></thead><tbody>${body}</tbody></table>
+      <p class="hint" style="margin-top:8px">승 ${t.opts.win}점 · 무 ${t.opts.draw}점 · 패 ${t.opts.loss}점. 순위 기준: 승점 → ${t.opts.useScore ? '득실차 → 다득점 → ' : ''}승자승. 모두 같으면 공동 순위입니다.</p></section></div>`;
+}
+
+/* ====== 내보내기 / 불러오기 ====== */
+function download(name, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}`; };
+function importText(text) {
+  let d; try { d = JSON.parse(text); } catch (e) { return toast('파일을 읽을 수 없어요. 이 앱에서 내보낸 백업 파일인지 확인해 주세요.'); }
+  const list = Array.isArray(d.tournaments) ? d.tournaments : (d && d.id && d.players ? [d] : []);
+  let added = 0;
+  list.forEach(t => {
+    if (!t || !t.id || !Array.isArray(t.players) || !['league', 'knockout'].includes(t.format)) return;
+    t.opts = Object.assign({ rounds: 1, win: 3, draw: 1, loss: 0, useScore: true, third: true }, t.opts);
+    t.results = t.results || {}; t.slots = t.slots || []; t.unit = t.unit || 'individual'; t.updatedAt = t.updatedAt || Date.now(); t.createdAt = t.createdAt || Date.now();
+    const i = db.tournaments.findIndex(x => x.id === t.id);
+    if (i >= 0) { if (!confirm(`「${t.name}」 대회가 이미 있어요. 불러온 파일로 덮어쓸까요?`)) return; db.tournaments[i] = t; }
+    else db.tournaments.unshift(t);
+    added++;
+  });
+  save(); rerender(); toast(added ? `${added}개 대회를 불러왔어요.` : '불러올 대회가 없었어요.');
+}
+
+/* ====== 이벤트 ====== */
+const app = $('#app');
+const A = {
+  home: () => go('home'),
+  new: () => go('create'),
+  cancel: () => go('home'),
+  open: el => go('t', el.dataset.id),
+  create: createFromForm,
+  sample: () => { $('#roster').value = SAMPLE.join('\n'); syncForm(); },
+  split: () => {
+    const st = $('#students').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const k = Math.max(2, parseInt($('#teamcount').value, 10) || 2);
+    if (st.length < k) return toast('학생 수가 팀 수보다 많아야 해요.');
+    const teams = Array.from({ length: k }, () => []);
+    shuffle(st).forEach((s, i) => teams[i % k].push(s));
+    $('#roster').value = teams.map((m, i) => `${i + 1}팀: ${m.join(', ')}`).join('\n'); syncForm();
+    toast(`${k}개 팀으로 나눴어요.`);
+  },
+  dup: el => {
+    const src = db.tournaments.find(t => t.id === el.dataset.id); if (!src) return;
+    const c = JSON.parse(JSON.stringify(src)); c.id = uid(); c.name = src.name + ' (복사)'; c.results = {}; c.createdAt = c.updatedAt = Date.now();
+    db.tournaments.unshift(c); save(); go('t', c.id); toast('결과를 비운 새 대회로 복사했어요.');
+  },
+  del: el => {
+    const t = db.tournaments.find(x => x.id === el.dataset.id); if (!t) return;
+    if (!confirm(`「${t.name}」 대회를 삭제할까요?\n삭제하면 되돌릴 수 없어요. (백업 파일이 있다면 다시 불러올 수 있어요)`)) return;
+    db.tournaments = db.tournaments.filter(x => x.id !== t.id); if (db.lastId === t.id) db.lastId = null;
+    save(); go('home'); toast('삭제했어요.');
+  },
+  import: () => $('#importfile').click(),
+  'export-all': () => download(`대진표백업_${stamp()}.json`, { app: 'pe-bracket', version: 1, tournaments: db.tournaments }),
+  'export-one': () => { const t = cur(); download(`${t.name.replace(/[\\/:*?"<>|]/g, '_')}_${stamp()}.json`, { app: 'pe-bracket', version: 1, tournaments: [t] }); },
+  print: () => window.print(),
+  present: () => { ui.present = true; ui.sel = null; rerender(); try { document.documentElement.requestFullscreen?.(); } catch (e) {} },
+  'exit-present': () => exitPresent(),
+  rename: () => { const t = cur(), n = prompt('대회 이름', t.name); if (n && n.trim()) { t.name = n.trim().slice(0, 60); commit(); } },
+  reset: () => { const t = cur(); if (!confirm('입력된 경기 결과를 모두 지우고 편성을 다시 할 수 있게 할까요?')) return; t.results = {}; commit(); toast('결과를 초기화했어요.'); },
+  'arr-random': () => { const t = cur(); arrange(t, 'random'); ui.sel = null; commit(); },
+  'arr-seed': () => { const t = cur(); arrange(t, 'seed'); ui.sel = null; commit(); },
+  slot: el => {
+    const t = cur(), i = +el.dataset.idx;
+    if (ui.sel == null) ui.sel = i;
+    else if (ui.sel === i) ui.sel = null;
+    else { [t.slots[ui.sel], t.slots[i]] = [t.slots[i], t.slots[ui.sel]]; ui.sel = null; commit(); return; }
+    rerender();
+  },
+  up: el => movePlayer(+el.dataset.i, +el.dataset.i - 1),
+  down: el => movePlayer(+el.dataset.i, +el.dataset.i + 1),
+  rm: el => {
+    const t = cur(); if (t.players.length <= 2) return toast('참가자는 최소 2명(팀)이 필요해요.');
+    t.players.splice(+el.dataset.i, 1); if (t.format === 'knockout') relayout(t); commit();
+  },
+  add: () => {
+    const t = cur(), inp = $('#newname'), name = inp.value.trim(); if (!name) return inp.focus();
+    if (t.players.length >= 64) return toast('최대 64명(팀)까지 가능해요.');
+    let nm = name, c = 1; while (t.players.some(p => p.name === nm)) nm = `${name} (${++c})`;
+    t.players.push({ id: uid(), name: nm, members: '', seed: null });
+    if (t.format === 'knockout') relayout(t); commit();
+    setTimeout(() => $('#newname')?.focus(), 30);
+  },
+  'ko-win': el => { const t = cur(); setKoWinner(t, el.dataset.key, el.dataset.id); commit(); },
+  lres: el => { const t = cur(); setLeagueRes(t, el.dataset.key, el.dataset.v); commit(); }
+};
+function movePlayer(from, to) {
+  const t = cur(); if (to < 0 || to >= t.players.length || from === to) return;
+  const [p] = t.players.splice(from, 1); t.players.splice(to, 0, p); commit();
+}
+function exitPresent() { ui.present = false; try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} rerender(); }
+
+const C = {
+  pname: el => { const p = P(cur(), el.dataset.id); if (p && el.value.trim()) p.name = el.value.trim(); commit(); },
+  pmem: el => { const p = P(cur(), el.dataset.id); if (p) p.members = el.value.trim(); commit(); },
+  pseed: el => { const p = P(cur(), el.dataset.id), n = parseInt(el.value, 10); if (p) p.seed = n > 0 ? n : null; commit(); },
+  kscore: el => { setKoScore(cur(), el.dataset.key, el.dataset.side, el.value); commit(); },
+  lscore: el => { setLeagueScore(cur(), el.dataset.key, el.dataset.side, el.value); commit(); },
+  rounds: el => { cur().opts.rounds = +el.value === 2 ? 2 : 1; commit(); },
+  third: el => { cur().opts.third = el.checked; commit(); }
+};
+
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]'); if (!el || !app.contains(el)) return;
+  const f = A[el.dataset.act]; if (f) f(el, e);
+});
+app.addEventListener('change', e => { const f = C[e.target.dataset?.chg]; if (f) f(e.target); });
+app.addEventListener('input', e => { if (e.target.closest('#cf')) syncForm(); });
+app.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('input[type=number], .plist input[type=text]')) { e.preventDefault(); e.target.blur(); }
+  if (e.key === 'Enter' && e.target.id === 'newname') { e.preventDefault(); A.add(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (ui.present) exitPresent(); else if (ui.sel != null) { ui.sel = null; rerender(); } }
+});
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && ui.present) { ui.present = false; rerender(); } });
+$('#importfile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader(); rd.onload = () => importText(String(rd.result)); rd.readAsText(f); e.target.value = '';
+});
+
+/* 끌어서 놓기 */
+app.addEventListener('dragstart', e => {
+  const el = e.target.closest('[data-drag]'); if (!el) return;
+  ui.drag = el.dataset.drag; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ui.drag);
+});
+app.addEventListener('dragover', e => {
+  const el = e.target.closest('[data-drop]'); if (!el || !ui.drag) return;
+  e.preventDefault(); document.querySelectorAll('.over').forEach(x => x.classList.remove('over')); el.classList.add('over');
+});
+app.addEventListener('dragend', () => { ui.drag = null; document.querySelectorAll('.over').forEach(x => x.classList.remove('over')); });
+app.addEventListener('drop', e => {
+  const el = e.target.closest('[data-drop]'); if (!el || !ui.drag) return;
+  e.preventDefault();
+  const [k1, i1] = ui.drag.split(':'), [k2, i2] = el.dataset.drop.split(':'); ui.drag = null;
+  if (k1 !== k2) return;
+  const t = cur();
+  if (k1 === 'slot') { const a = +i1, b = +i2; if (a !== b) { [t.slots[a], t.slots[b]] = [t.slots[b], t.slots[a]]; ui.sel = null; commit(); } }
+  else if (k1 === 'pl') movePlayer(+i1, +i2);
+});
+
+/* 시작 */
+rerender();
+</script>
+</body>
+</html>
