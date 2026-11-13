@@ -1,0 +1,2147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAS로 성장하는 스포츠 축제 — 운영판</title>
+<meta name="description" content="중학교 학년말 체육 축제(배드민턴 복식 토너먼트·배구 리그·레이저 사격·킨볼·경품 추첨) 운영용 오프라인 단일 파일 웹앱">
+<style>
+/* ===== 기본: 밝은 체육관용 고대비, 굵은 글씨, 큰 터치 영역 ===== */
+:root {
+  --bg: #f3f4f6; --surface: #ffffff; --ink: #111827; --muted: #4b5563; --line: #d1d5db; --line-strong: #9ca3af;
+  --accent: #1d4ed8; --accent-ink: #ffffff; --accent-soft: #dbeafe;
+  --ok: #047857; --ok-soft: #d1fae5; --warn: #b45309; --warn-soft: #fef3c7; --danger: #b91c1c; --danger-soft: #fee2e2;
+  --fs: 17px; --radius: 10px;
+}
+html.fs-large { --fs: 20px; }
+html.fs-xl { --fs: 24px; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--fs)/1.45 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif; font-weight: 600; }
+h1, h2, h3, h4, p { margin: 0; }
+h2 { font-size: 1.35em; margin-bottom: 10px; }
+h3 { font-size: 1.1em; margin: 14px 0 8px; }
+button, input, select, textarea { font: inherit; font-weight: 700; color: inherit; }
+:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+.wrap { max-width: 1400px; margin: 0 auto; padding: 12px 14px 60px; }
+.muted { color: var(--muted); font-weight: 600; }
+.small { font-size: .85em; }
+.nowrap { white-space: nowrap; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row.between { justify-content: space-between; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+
+/* ===== 버튼 / 입력 (터치: 최소 44px) ===== */
+.btn { min-height: 44px; padding: 8px 16px; border-radius: var(--radius); border: 2px solid var(--line-strong); background: var(--surface); font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; touch-action: manipulation; }
+.btn:hover { border-color: var(--ink); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ok { background: var(--ok); color: #fff; border-color: var(--ok); }
+.btn.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.warn { background: var(--warn); color: #fff; border-color: var(--warn); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.sm { min-height: 40px; padding: 4px 10px; font-size: .9em; }
+.btn.big { min-height: 56px; font-size: 1.15em; padding: 10px 24px; }
+input[type=text], input[type=number], input[type=color], select, textarea { min-height: 44px; padding: 6px 10px; border: 2px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); width: 100%; }
+input[type=number] { max-width: 120px; }
+input[type=color] { width: 60px; padding: 2px; }
+textarea { resize: vertical; line-height: 1.5; font-weight: 600; }
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: .95em; }
+label.inline { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+input[type=checkbox], input[type=radio] { width: 24px; height: 24px; }
+.hint { color: var(--muted); font-size: .88em; font-weight: 600; }
+
+/* ===== 카드 ===== */
+.card { background: var(--surface); border: 2px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+.card.tight { padding: 10px; }
+.banner { padding: 12px 14px; border-radius: var(--radius); margin-bottom: 12px; font-weight: 800; border: 2px solid; }
+.banner.warn { background: var(--warn-soft); border-color: var(--warn); color: #78350f; }
+.banner.danger { background: var(--danger-soft); border-color: var(--danger); color: #7f1d1d; }
+.banner.ok { background: var(--ok-soft); border-color: var(--ok); color: #064e3b; }
+.banner.info { background: var(--accent-soft); border-color: var(--accent); color: #1e3a8a; }
+.banner ul { margin: 6px 0 0; padding-left: 20px; }
+
+/* ===== 헤더 / 요약 바 / 탭 ===== */
+header.top { background: #0f172a; color: #fff; padding: 10px 14px; }
+header.top .title { font-size: 1.25em; font-weight: 900; letter-spacing: -.01em; }
+.summary-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 14px; background: #1e293b; color: #fff; }
+.summary-bar .chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #fff; color: #111; font-weight: 900; border: 3px solid; min-height: 40px; }
+.summary-bar .chip .rank { background: #111; color: #fff; border-radius: 6px; padding: 0 7px; font-size: .85em; }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 0; background: var(--bg); position: sticky; top: 0; z-index: 20; border-bottom: 2px solid var(--line); }
+nav.tabs button { min-height: 48px; padding: 6px 16px; border: 2px solid var(--line-strong); border-bottom: none; border-radius: 10px 10px 0 0; background: #e5e7eb; font-weight: 800; cursor: pointer; }
+nav.tabs button.active { background: var(--surface); color: var(--accent); border-color: var(--accent); box-shadow: inset 0 -3px 0 var(--accent); }
+section.tab { display: none; }
+section.tab.active { display: block; }
+
+/* ===== 반 배지 ===== */
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 8px; color: #fff; font-weight: 900; border: 2px solid rgba(0,0,0,.25); line-height: 1.3; white-space: nowrap; }
+.badge.lg { font-size: 1.2em; padding: 6px 14px; }
+.seed { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 50%; background: #111; color: #fde047; font-weight: 900; font-size: .85em; border: 2px solid #fde047; }
+
+/* ===== 표 ===== */
+table { border-collapse: collapse; width: 100%; background: var(--surface); }
+th, td { border: 2px solid var(--line); padding: 8px 10px; text-align: center; }
+th { background: #e5e7eb; font-weight: 900; }
+td.left, th.left { text-align: left; }
+.table-wrap { overflow-x: auto; }
+td input[type=number] { max-width: 90px; text-align: center; }
+tr.hl { animation: hl 1.6s ease-out; }
+@keyframes hl { 0% { background: #fde047; } 100% { background: transparent; } }
+.rank1 { background: #fef9c3; } .rank2 { background: #f1f5f9; } .rank3 { background: #fdf2e9; }
+.modified { background: #fff7ed; }
+.tag { display: inline-block; font-size: .72em; padding: 1px 6px; border-radius: 6px; background: var(--warn); color: #fff; margin-left: 4px; vertical-align: middle; }
+
+/* ===== 대진표 ===== */
+.bracket-scroll { overflow: auto; border: 2px solid var(--line); border-radius: 12px; background: #fafafa; padding: 10px; }
+.bracket { display: flex; gap: 20px; min-width: max-content; }
+.bracket .col { display: flex; flex-direction: column; min-width: 230px; }
+.bracket .col h4 { text-align: center; margin: 0 0 8px; position: sticky; top: 0; background: #fafafa; padding: 4px; z-index: 1; }
+.bracket .col .matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; }
+.match { border: 2px solid var(--line-strong); border-radius: 10px; background: #fff; margin: 3px 0; cursor: pointer; overflow: hidden; }
+.match.done { border-color: var(--ok); }
+.match.ready { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.match .side { display: flex; align-items: center; gap: 6px; padding: 4px 8px; min-height: 36px; font-size: .9em; border-bottom: 1px solid var(--line); }
+.match .side:last-child { border-bottom: none; }
+.match .side.winner { background: var(--ok-soft); }
+.match .side.loser { opacity: .55; }
+.match .side .names { color: var(--muted); font-size: .85em; font-weight: 600; white-space: nowrap; }
+.match .side.bye, .match .side.empty { color: var(--muted); font-style: italic; }
+.match .mark { margin-left: auto; font-size: .78em; font-weight: 900; }
+.match .label { font-size: .72em; color: var(--muted); padding: 2px 8px 0; font-weight: 700; }
+
+/* ===== 호출판 ===== */
+.callboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.callboard .item { border: 2px solid var(--accent); border-radius: 10px; padding: 8px 10px; background: #fff; }
+.callboard .item .court { font-weight: 900; color: var(--accent); }
+
+/* ===== 킨볼 순위 선택 ===== */
+.pick-area { display: flex; flex-wrap: wrap; gap: 8px; }
+.pick-area .btn { min-height: 52px; font-size: 1.05em; }
+
+/* ===== 추첨 ===== */
+.lottery-stage { text-align: center; padding: 30px 10px; border: 4px dashed var(--line-strong); border-radius: 20px; background: #fff; min-height: 220px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.lottery-stage .big { font-size: 2.6em; font-weight: 900; }
+.lottery-stage .big.spin { animation: spin .12s linear infinite; }
+@keyframes spin { 0% { transform: translateY(-3px); } 100% { transform: translateY(3px); } }
+
+/* ===== 타이머 ===== */
+.timer { border: 3px solid var(--line-strong); border-radius: 14px; padding: 12px; background: #fff; text-align: center; }
+.timer .time { font-size: 2.6em; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.timer.running { border-color: var(--accent); }
+.timer.ended { border-color: var(--danger); animation: blink .6s step-start infinite; }
+@keyframes blink { 50% { background: #fecaca; } }
+.timer .msg { font-weight: 800; color: var(--danger); margin-top: 6px; min-height: 1.4em; }
+
+/* ===== 전광판 ===== */
+#scoreboard { position: fixed; inset: 0; background: #0b1220; color: #fff; z-index: 100; padding: 3vh 4vw; display: none; flex-direction: column; }
+#scoreboard.on { display: flex; }
+#scoreboard .sb-head { display: flex; justify-content: space-between; align-items: center; font-size: 2.4vw; font-weight: 900; }
+#scoreboard .sb-status { font-size: 2vw; color: #fde047; margin: 1vh 0 2vh; font-weight: 900; }
+#scoreboard .sb-rows { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
+#scoreboard .sb-row { display: grid; grid-template-columns: 8vw 14vw 1fr 14vw; align-items: center; gap: 2vw; font-size: 4vw; font-weight: 900; padding: 1vh 1vw; border-radius: 1.5vw; }
+#scoreboard .sb-row.hl { animation: sbhl 1.5s ease-out; }
+@keyframes sbhl { 0% { background: #facc15; color: #111; } 100% { background: transparent; } }
+#scoreboard .bar { height: 6vh; border-radius: 1vw; border: 3px solid rgba(255,255,255,.6); transition: width .6s; min-width: 2vw; }
+#scoreboard .sb-foot { font-size: 1.6vw; color: #cbd5e1; margin-top: 1vh; }
+#scoreboard .btn { color: #111; }
+
+/* ===== 모달 ===== */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 90; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-bg.on { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 18px; max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; }
+.modal .btn { width: 100%; justify-content: flex-start; margin-top: 8px; min-height: 52px; }
+
+/* ===== 동점 처리 순서 ===== */
+.order-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.order-list li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 2px solid var(--line-strong); border-radius: 10px; background: #fff; cursor: grab; }
+.order-list li.drag { opacity: .4; }
+.order-list li .num { font-weight: 900; color: var(--accent); min-width: 1.4em; }
+.order-list li .sp { flex: 1; }
+
+/* ===== 인쇄 ===== */
+.print-only { display: none; }
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body { background: #fff; font-size: 11px; font-weight: 600; }
+  header.top, .summary-bar, nav.tabs, .no-print, #warn-banner, .btn { display: none !important; }
+  .wrap { max-width: none; padding: 0; }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  .card { border: none; padding: 0; margin: 0 0 8px; page-break-inside: avoid; }
+  body.print-bracket section.tab.active > .card:not(.bracket-card), body.print-overall section.tab.active > .card:not(.overall-card), body.print-vol section.tab.active > .card:not(.vol-card) { display: none !important; }
+  .bracket-scroll { overflow: visible; border: none; padding: 0; }
+  .bracket { gap: 8px; }
+  .bracket .col { min-width: 0; width: 160px; }
+  .match .side { min-height: 22px; padding: 1px 4px; font-size: 9px; }
+  .match .side .names { font-size: 8px; }
+  .match .label { display: none; }
+  .print-only { display: block; }
+  th, td { padding: 4px 6px; }
+}
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="row between">
+    <div class="title">🏅 RAS로 성장하는 스포츠 축제 — 운영판</div>
+    <div class="row">
+      <button class="btn sm" id="btn-scoreboard" type="button">📺 전광판</button>
+      <span class="small" id="save-status" style="color:#cbd5e1"></span>
+    </div>
+  </div>
+</header>
+<div class="summary-bar" id="summary-bar"></div>
+<div id="warn-banner" class="banner danger" hidden style="margin:10px 14px 0"></div>
+
+<nav class="tabs" id="tabs">
+  <button type="button" data-tab="settings">⚙️ 설정</button>
+  <button type="button" data-tab="bad">🏸 배드민턴</button>
+  <button type="button" data-tab="vol">🏐 배구</button>
+  <button type="button" data-tab="laser">🎯 레이저 사격</button>
+  <button type="button" data-tab="kin">⚽ 킨볼</button>
+  <button type="button" data-tab="overall">🏆 종합 집계표</button>
+  <button type="button" data-tab="lottery">🎁 경품 추첨</button>
+  <button type="button" data-tab="timer">⏱️ 타이머</button>
+  <button type="button" data-tab="schedule">📅 일정표</button>
+</nav>
+
+<main class="wrap">
+  <section class="tab" id="tab-settings"></section>
+  <section class="tab" id="tab-bad"></section>
+  <section class="tab" id="tab-vol"></section>
+  <section class="tab" id="tab-laser"></section>
+  <section class="tab" id="tab-kin"></section>
+  <section class="tab" id="tab-overall"></section>
+  <section class="tab" id="tab-lottery"></section>
+  <section class="tab" id="tab-timer"></section>
+  <section class="tab" id="tab-schedule"></section>
+</main>
+
+<div id="scoreboard" aria-live="polite">
+  <div class="sb-head">
+    <div>🏅 RAS로 성장하는 스포츠 축제 — 종합 순위</div>
+    <button class="btn" type="button" id="btn-scoreboard-close">닫기 ✕</button>
+  </div>
+  <div class="sb-status" id="sb-status"></div>
+  <div class="sb-rows" id="sb-rows"></div>
+  <div class="sb-foot">시상: 1위 120,000원 · 2위 90,000원 · 3위 60,000원 상품권 · 4위 러키드로우·참가상</div>
+</div>
+
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal"></div></div>
+
+<script>
+/* ===================================================================
+   배드민턴 복식 대진 알고리즘 (명세 2-5 ~ 2-7, 2-9, 2-10)
+   - DOM을 쓰지 않는 순수 함수 모음. node와 브라우저 모두에서 동작.
+   =================================================================== */
+var Bracket = (function () {
+  'use strict';
+  var SIZE = 64;
+
+  function rnd(n) { return Math.floor(Math.random() * n); }
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = rnd(i + 1); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  // 포지션 p(1~64)가 속한 구역 번호. size: 2(32강 구역) 4(16강) 8(8강) 16(준결승) 32(결승)
+  function region(p, size) { return Math.floor((p - 1) / size); }
+  // 1회전 짝 상대 포지션
+  function partner(p) { return p % 2 === 1 ? p + 1 : p - 1; }
+
+  function groupByClass(teams, classIds) {
+    var m = {};
+    classIds.forEach(function (c) { m[c] = []; });
+    teams.forEach(function (t) { if (m[t.classId]) m[t.classId].push(t); });
+    return m;
+  }
+
+  /* ---------- 생성 전 검사 ---------- */
+  function precheck(teams, classes, opts) {
+    opts = opts || {};
+    var errors = [];
+    var N = teams.length;
+    if (N <= 32 || N > 64) {
+      errors.push('참가 조 수가 ' + N + '조입니다. 33조 이상 64조 이하일 때만 64강 대진을 만들 수 있습니다. 조 수를 조정해 주세요.');
+      return errors;
+    }
+    var classIds = classes.map(function (c) { return c.id; });
+    var byClass = groupByClass(teams, classIds);
+    var B = SIZE - N, M = N - 32; // 부전승 수, 1회전 경기 수
+    classes.forEach(function (c) {
+      var list = byClass[c.id];
+      var seeds = list.filter(function (t) { return t.seed > 0; });
+      var tiers = {};
+      seeds.forEach(function (t) { tiers[t.seed] = (tiers[t.seed] || 0) + 1; });
+      var ok = seeds.length === 4 && [1, 2, 3, 4].every(function (k) { return tiers[k] === 1; });
+      if (!ok) errors.push(c.name + ' 반의 시드는 1번~4번이 각각 정확히 1조씩(총 4조) 지정되어야 합니다. (현재 ' + seeds.length + '조 지정)');
+      if (list.length * 2 > N) errors.push(c.name + ' 반의 조 수(' + list.length + '조)가 전체 조 수(' + N + '조)의 절반을 넘어, 1회전 같은 반 회피가 수학적으로 불가능합니다.');
+    });
+    if (errors.length) return errors;
+    // 정밀 검사: 부전승을 배분한 뒤 '1회전에 실제로 뛰는 조' 수가 어느 반이든 1회전 경기 수(M)를 넘으면
+    // 같은 반 회피가 불가능하다. (부전승은 반별 균등 또는 비례로 배분된다고 가정)
+    var counts = {}; classIds.forEach(function (c) { counts[c] = byClass[c].length; });
+    var byes;
+    if (opts.byeMode === 'proportional') byes = proportionalQuota(counts, B);
+    else {
+      // 균등: 기본 floor(B/4), 나머지 B%4개는 조 수가 많은 반부터 +1 (가장 유리한 경우)
+      var base = Math.floor(B / 4), extra = B % 4;
+      var sorted = classIds.slice().sort(function (a, b) { return counts[b] - counts[a]; });
+      byes = {};
+      sorted.forEach(function (c, i) { byes[c] = base + (i < extra ? 1 : 0); });
+      classes.forEach(function (c) {
+        if (counts[c.id] < base) errors.push(c.name + ' 반의 조 수(' + counts[c.id] + '조)가 너무 적어 부전승 ' + B + '개를 반별 균등(반마다 ' + base + '개 이상)으로 배분할 수 없습니다. 조 수를 조정하거나 설정에서 "반별 인원 비례"를 선택해 주세요.');
+      });
+    }
+    classes.forEach(function (c) {
+      var playing = counts[c.id] - byes[c.id];
+      if (playing > M) errors.push(c.name + ' 반은 부전승을 빼고도 1회전에 ' + playing + '조가 뛰어야 하는데 1회전 경기는 ' + M + '경기뿐이라, 같은 반끼리 붙지 않게 짤 수 없습니다. 조 수를 조정해 주세요.');
+    });
+    return errors;
+  }
+
+  /* 비례 배분: 최대 잔여법(largest remainder) */
+  function proportionalQuota(counts, total) {
+    var sum = 0, ids = Object.keys(counts);
+    ids.forEach(function (k) { sum += counts[k]; });
+    var q = {}, rema = [], used = 0;
+    ids.forEach(function (k) {
+      var exact = sum ? counts[k] * total / sum : 0;
+      q[k] = Math.floor(exact); used += q[k];
+      rema.push({ k: k, r: exact - q[k] });
+    });
+    rema.sort(function (a, b) { return b.r - a.r; });
+    for (var i = 0; used < total && i < rema.length; i++) { q[rema[i].k]++; used++; }
+    return q;
+  }
+
+  /* ---------- 1회전 같은 반 위반 짝 찾기 ---------- */
+  function findViolations(slots, classOf) {
+    var v = [];
+    for (var k = 1; k <= 32; k++) {
+      var a = slots[2 * k - 1], b = slots[2 * k];
+      if (a && b && a !== 'BYE' && b !== 'BYE' && classOf(a) === classOf(b)) v.push(k);
+    }
+    return v;
+  }
+
+  /* ===================================================================
+     대진 생성
+     teams: [{id, classId, seed(0~4)}], classes: [{id, name}]
+     opts: { latin: true, byeMode: 'equal' | 'proportional' }
+     반환: { ok, slots[1..64], byeTeams, byeCount, warnings[], violations[], latin, attempts }
+     =================================================================== */
+  function generate(teams, classes, opts) {
+    opts = opts || {};
+    var useLatin = opts.latin !== false;
+    var byeMode = opts.byeMode === 'proportional' ? 'proportional' : 'equal';
+    var classIds = classes.map(function (c) { return c.id; });
+    var nameOf = {}; classes.forEach(function (c) { nameOf[c.id] = c.name; });
+    var teamMap = {}; teams.forEach(function (t) { teamMap[t.id] = t; });
+    var classOf = function (id) { return teamMap[id].classId; };
+
+    var errors = precheck(teams, classes, { byeMode: byeMode });
+    if (errors.length) return { ok: false, errors: errors, warnings: [], violations: [] };
+    var lastResult = null;
+
+    var N = teams.length, B = SIZE - N;
+    var byClass = groupByClass(teams, classIds);
+    // seedTeam[classId][tier] = team
+    var seedTeam = {};
+    classIds.forEach(function (c) {
+      seedTeam[c] = {};
+      byClass[c].forEach(function (t) { if (t.seed > 0) seedTeam[c][t.seed] = t; });
+    });
+    var counts = {}; classIds.forEach(function (c) { counts[c] = byClass[c].length; });
+    var quota = byeMode === 'proportional' ? proportionalQuota(counts, B) : null;
+
+    var MAX_REGEN = 60;
+    for (var attempt = 0; attempt < MAX_REGEN; attempt++) {
+      var slots = new Array(SIZE + 1).fill(null); // 1~64 사용
+      var warnings = [];
+
+      /* STEP 4. 4×4 라틴 방진: L[q][t] = 준결승 구역 q, 티어 t(0=1번…3=4번) → 반 인덱스 */
+      var L;
+      if (useLatin) {
+        var rows = shuffle([0, 1, 2, 3]), cols = shuffle([0, 1, 2, 3]);
+        L = rows.map(function (r) { return cols.map(function (c) { return (r + c) % 4; }); });
+      } else {
+        // 라틴 방진 끔: 티어마다 반 순서를 독립적으로 무작위 배정 (준결승 구역마다 각 티어 1개씩은 유지)
+        var perms = [0, 1, 2, 3].map(function () { return shuffle([0, 1, 2, 3]); });
+        L = [0, 1, 2, 3].map(function (q) { return [0, 1, 2, 3].map(function (t) { return perms[t][q]; }); });
+      }
+
+      /* STEP 1~3. 준결승 구역(16칸) 4개 각각에 1·2·3·4번 시드를 하나씩, 서로 다른 16강 구역(4칸)에 배치 */
+      var seedPos = {};
+      for (var q = 0; q < 4; q++) {
+        var qfA = rnd(2), qfB = 1 - qfA;          // 8강 구역 2개 중 1번 시드가 들어갈 쪽
+        var r16a = rnd(2), r16a2 = 1 - r16a;      // qfA 안의 16강 구역 2개
+        var r16b = rnd(2), r16b2 = 1 - r16b;      // qfB 안의 16강 구역 2개
+        var low = shuffle([2, 3]);                // 3번·4번 시드(티어 인덱스 2,3)
+        var placements = [
+          [qfA, r16a, 0],       // 1번 시드
+          [qfA, r16a2, low[0]], // 1번 시드와 같은 8강 구역의 다른 16강 구역 → 3 또는 4번 (2번 금지)
+          [qfB, r16b, 1],       // 2번 시드는 다른 8강 구역
+          [qfB, r16b2, low[1]]  // 남은 3·4번 시드
+        ];
+        placements.forEach(function (pl) {
+          var regionIdx = q * 4 + pl[0] * 2 + pl[1]; // 16강 구역 번호 0~15
+          var base = regionIdx * 4 + 1;
+          var pos = base + rnd(4);
+          var cid = classIds[L[q][pl[2]]];
+          var team = seedTeam[cid][pl[2] + 1];
+          slots[pos] = team.id;
+          seedPos[team.id] = pos;
+        });
+      }
+
+      /* 2-6. 부전승 배정: 티어 우선, 티어 안에서 반 무작위(균등) */
+      var byeTeams = {}, byeCount = {};
+      classIds.forEach(function (c) { byeCount[c] = 0; });
+      var remaining = B;
+      var canGive = function (cid) { return quota ? byeCount[cid] < quota[cid] : true; };
+      for (var tier = 1; tier <= 4 && remaining > 0; tier++) {
+        shuffle(classIds).forEach(function (cid) {
+          if (remaining <= 0 || !canGive(cid)) return;
+          var t = seedTeam[cid][tier];
+          slots[partner(seedPos[t.id])] = 'BYE';
+          byeTeams[t.id] = true; byeCount[cid]++; remaining--;
+        });
+      }
+      // 무시드 조 부전승: '현재 부전승 수가 가장 적은 반'부터 무작위 1개씩
+      var pool = {};
+      classIds.forEach(function (c) { pool[c] = shuffle(byClass[c].filter(function (t) { return t.seed === 0; })); });
+      var freePairs = [];
+      for (var k = 1; k <= 32; k++) if (!slots[2 * k - 1] && !slots[2 * k]) freePairs.push(k);
+      freePairs = shuffle(freePairs);
+      while (remaining > 0) {
+        var cands = classIds.filter(function (c) { return pool[c].length > 0 && canGive(c); });
+        if (!cands.length || !freePairs.length) break;
+        if (quota) {
+          var maxLeft = Math.max.apply(null, cands.map(function (c) { return quota[c] - byeCount[c]; }));
+          cands = cands.filter(function (c) { return quota[c] - byeCount[c] === maxLeft; });
+        } else {
+          var minB = Math.min.apply(null, cands.map(function (c) { return byeCount[c]; }));
+          cands = cands.filter(function (c) { return byeCount[c] === minB; });
+          // 같은 수라면 아직 1회전에 뛸 조가 가장 많이 남은 반을 우선 (같은 반 대결 회피에 유리)
+          var maxPool = Math.max.apply(null, cands.map(function (c) { return pool[c].length; }));
+          cands = cands.filter(function (c) { return pool[c].length === maxPool; });
+        }
+        var cid2 = cands[rnd(cands.length)];
+        var team2 = pool[cid2].pop();
+        var pk = freePairs.pop();
+        var a = 2 * pk - 1, b = 2 * pk;
+        if (rnd(2)) { slots[a] = team2.id; slots[b] = 'BYE'; } else { slots[b] = team2.id; slots[a] = 'BYE'; }
+        byeTeams[team2.id] = true; byeCount[cid2]++; remaining--;
+      }
+      if (remaining > 0) warnings.push('부전승 ' + remaining + '개를 배정할 조가 부족합니다. (조 수를 확인해 주세요)');
+
+      // 반별 부전승 차이 검사 (균등 모드: 1 이내, 비례 모드: 할당량과 일치)
+      var vals = classIds.map(function (c) { return byeCount[c]; });
+      var diff = Math.max.apply(null, vals) - Math.min.apply(null, vals);
+      var balanced = quota ? classIds.every(function (c) { return byeCount[c] === quota[c]; }) : diff <= 1;
+      if (!balanced && attempt < MAX_REGEN - 1) continue; // 재생성
+      if (!balanced) warnings.push(byeMode === 'equal'
+        ? '반별 부전승 수 차이가 1을 넘습니다(' + classIds.map(function (c) { return nameOf[c] + ' ' + byeCount[c]; }).join(', ') + '). 특정 반의 무시드 조가 부족해 균등 배분이 불가능합니다.'
+        : '반별 부전승 수가 비례 할당량과 다릅니다(' + classIds.map(function (c) { return nameOf[c] + ' ' + byeCount[c] + '/' + quota[c]; }).join(', ') + ').');
+
+      /* 2-7. 무시드 조 배치 + 1회전 같은 반 회피 (지역 교환 수선, 최대 200회) */
+      var placed = {};
+      Object.keys(seedPos).forEach(function (id) { placed[id] = true; });
+      Object.keys(byeTeams).forEach(function (id) { placed[id] = true; });
+      var rest = teams.filter(function (t) { return !placed[t.id]; });
+      var freeSlots = [];
+      for (var p = 1; p <= SIZE; p++) if (!slots[p]) freeSlots.push(p);
+      if (rest.length !== freeSlots.length) {
+        return { ok: false, errors: ['내부 오류: 남은 조 수(' + rest.length + ')와 빈 자리 수(' + freeSlots.length + ')가 다릅니다.'], warnings: warnings, violations: [] };
+      }
+      var movable = {}; freeSlots.forEach(function (p) { movable[p] = true; });
+      var violations = [];
+      var tries;
+      for (tries = 0; tries < 200; tries++) {
+        var order = shuffle(rest);
+        freeSlots.forEach(function (p, i) { slots[p] = order[i].id; });
+        violations = findViolations(slots, classOf);
+        if (!violations.length) break;
+        var progress = true;
+        while (violations.length && progress) {
+          progress = false;
+          for (var vi = 0; vi < violations.length; vi++) {
+            var pk2 = violations[vi];
+            var pairSlots = [2 * pk2 - 1, 2 * pk2].filter(function (p) { return movable[p]; });
+            var done = false;
+            var ps = shuffle(pairSlots);
+            for (var x = 0; x < ps.length && !done; x++) {
+              var p1 = ps[x], o1 = partner(p1);
+              var cand = shuffle(freeSlots);
+              for (var y = 0; y < cand.length; y++) {
+                var p2 = cand[y];
+                if (p2 === p1 || p2 === o1) continue;
+                var o2 = partner(p2);
+                // 교환 후: p1 자리에 slots[p2], p2 자리에 slots[p1]
+                if (classOf(slots[p2]) === classOf(slots[o1])) continue; // 위반 짝이 그대로 남음
+                if (classOf(slots[p1]) === classOf(slots[o2])) continue; // 새 위반 발생
+                var tmp = slots[p1]; slots[p1] = slots[p2]; slots[p2] = tmp;
+                done = true; break;
+              }
+            }
+            if (done) progress = true;
+          }
+          violations = findViolations(slots, classOf);
+        }
+        if (!violations.length) break;
+      }
+      var result = {
+        ok: true, slots: slots, byeTeams: byeTeams, byeCount: byeCount, quota: quota,
+        warnings: warnings, violations: violations.slice(), latin: L, attempts: attempt + 1, placeTries: tries + 1
+      };
+      if (!balanced) result.ok = false;
+      if (violations.length) {
+        result.ok = false;
+        lastResult = result;
+        if (attempt < MAX_REGEN - 1) continue; // 부전승 배치부터 다시 생성
+        result.warnings.push('특정 반의 조 수가 너무 많아 1회전 같은 반 회피가 불가능합니다. (위반 짝 ' + violations.length + '개)');
+      }
+      return result;
+    }
+    if (lastResult) return lastResult;
+    return { ok: false, errors: ['대진 생성에 실패했습니다.'], warnings: [], violations: [] };
+  }
+
+  /* ===================================================================
+     2-4 규칙 검사 (검증용)
+     =================================================================== */
+  function checkRules(result, teams, classes, opts) {
+    opts = opts || {};
+    var problems = [];
+    if (!result || !result.slots) return ['대진표가 없습니다.'];
+    var slots = result.slots;
+    var teamMap = {}; teams.forEach(function (t) { teamMap[t.id] = t; });
+    var posOf = {};
+    var byes = [];
+    for (var p = 1; p <= SIZE; p++) {
+      var s = slots[p];
+      if (s === null || s === undefined) { problems.push('포지션 ' + p + '이 비어 있습니다.'); continue; }
+      if (s === 'BYE') { byes.push(p); continue; }
+      if (!teamMap[s]) { problems.push('포지션 ' + p + '에 알 수 없는 조(' + s + ')가 있습니다.'); continue; }
+      if (posOf[s] !== undefined) problems.push('조 ' + s + '가 두 포지션(' + posOf[s] + ', ' + p + ')에 있습니다.');
+      posOf[s] = p;
+    }
+    teams.forEach(function (t) { if (posOf[t.id] === undefined) problems.push('조 ' + t.id + '가 대진표에 없습니다.'); });
+    var seeds = teams.filter(function (t) { return t.seed > 0; });
+    // 시드 16개가 서로 다른 16강 구역
+    var r16used = {};
+    seeds.forEach(function (t) {
+      var r = region(posOf[t.id], 4);
+      if (r16used[r]) problems.push('16강 구역 ' + r + '에 시드가 2개 이상 있습니다.');
+      r16used[r] = true;
+    });
+    // 규칙 1~3
+    for (var i = 0; i < seeds.length; i++) for (var j = i + 1; j < seeds.length; j++) {
+      var a = seeds[i], b = seeds[j];
+      if (a.classId === b.classId) continue;
+      var pa = posOf[a.id], pb = posOf[b.id];
+      if (a.seed === 1 && b.seed === 1 && region(pa, 16) === region(pb, 16)) problems.push('규칙1 위반: 1번 시드끼리 준결승 전에 만남 (' + a.id + ', ' + b.id + ')');
+      if (((a.seed === 2 && b.seed === 1) || (a.seed === 1 && b.seed === 2)) && region(pa, 8) === region(pb, 8)) problems.push('규칙2 위반: 2번 시드가 1번 시드와 8강 전에 만남 (' + a.id + ', ' + b.id + ')');
+      if ((a.seed >= 3 || b.seed >= 3) && region(pa, 4) === region(pb, 4)) problems.push('규칙3 위반: 3·4번 시드가 다른 반 시드와 16강 전에 만남 (' + a.id + ', ' + b.id + ')');
+    }
+    // 규칙 4
+    for (var k = 1; k <= 32; k++) {
+      var x = slots[2 * k - 1], y = slots[2 * k];
+      if (x === 'BYE' && y === 'BYE') problems.push('32강 구역 ' + (k - 1) + '에 부전승이 2개 있습니다.');
+      if (x && y && x !== 'BYE' && y !== 'BYE' && teamMap[x].classId === teamMap[y].classId) problems.push('규칙4 위반: 1회전 같은 반 대결 (' + x + ' vs ' + y + ')');
+    }
+    // 부전승 수 = 64 - N, 반별 차이 1 이내
+    if (byes.length !== SIZE - teams.length) problems.push('부전승 수가 ' + byes.length + '개입니다(기대 ' + (SIZE - teams.length) + ').');
+    if (opts.byeMode !== 'proportional') {
+      var bc = {}; classes.forEach(function (c) { bc[c.id] = 0; });
+      Object.keys(result.byeTeams || {}).forEach(function (id) { bc[teamMap[id].classId]++; });
+      var vals = classes.map(function (c) { return bc[c.id]; });
+      if (Math.max.apply(null, vals) - Math.min.apply(null, vals) > 1) problems.push('반별 부전승 수 차이가 1을 넘습니다: ' + JSON.stringify(bc));
+    }
+    // 라틴 방진 옵션: 같은 반 시드 둘이 같은 준결승 구역에 없음
+    if (opts.latin !== false) {
+      var qUsed = {};
+      seeds.forEach(function (t) {
+        var key = t.classId + ':' + region(posOf[t.id], 16);
+        if (qUsed[key]) problems.push('라틴 방진 위반: ' + t.classId + ' 반 시드 둘이 같은 준결승 구역에 있음');
+        qUsed[key] = true;
+      });
+    }
+    return problems;
+  }
+
+  /* ===================================================================
+     라운드 구성과 승자 전파
+     results: { '1-0': {winner, type:'win'|'forfeit'}, ... } (라운드-경기번호)
+     반환: rounds[0..5] = 경기 배열 {r, i, key, a, b, winner, type}
+     =================================================================== */
+  var ROUND_NAMES = ['1회전(64강)', '32강', '16강', '8강', '준결승', '결승'];
+  function buildRounds(slots, results) {
+    results = results || {};
+    var rounds = [];
+    var prev = [];
+    for (var p = 1; p <= SIZE; p++) prev.push(slots[p]);
+    for (var r = 1; r <= 6; r++) {
+      var n = SIZE >> r; // 32,16,8,4,2,1
+      var matches = [];
+      for (var i = 0; i < n; i++) {
+        var a = prev[2 * i], b = prev[2 * i + 1];
+        var key = r + '-' + i;
+        var m = { r: r, i: i, key: key, a: a, b: b, winner: null, type: null };
+        if (a === 'BYE' && b === 'BYE') { m.winner = 'BYE'; m.type = 'bye'; }
+        else if (a === 'BYE' || b === 'BYE') { m.winner = a === 'BYE' ? b : a; m.type = 'bye'; if (!m.winner) m.winner = null; }
+        else if (a && b && results[key] && (results[key].winner === a || results[key].winner === b)) {
+          m.winner = results[key].winner; m.type = results[key].type || 'win';
+        }
+        matches.push(m);
+      }
+      rounds.push(matches);
+      prev = matches.map(function (m) { return m.winner; });
+    }
+    return rounds;
+  }
+
+  /* 각 조가 도달한 최대 라운드 (1~6, 우승이면 7). byeOnly: 1회전을 부전승으로 통과한 조 */
+  function reachedRounds(rounds) {
+    var reach = {}, byeOnly = {};
+    rounds.forEach(function (ms, idx) {
+      var r = idx + 1;
+      ms.forEach(function (m) {
+        [m.a, m.b].forEach(function (id) {
+          if (!id || id === 'BYE') return;
+          reach[id] = r;
+        });
+        if (r === 1 && m.type === 'bye' && m.winner && m.winner !== 'BYE') byeOnly[m.winner] = true;
+        if (r === 6 && m.winner && m.winner !== 'BYE') reach[m.winner] = 7;
+      });
+    });
+    return { reach: reach, byeOnly: byeOnly };
+  }
+
+  /* 2-9. 조별 비누적 점수. pts: {r32,r16,r8,sf,runnerUp,champion}; byePoints: 부전승 32강 진출 인정 */
+  function pointsFor(reached, isByeOnly, pts, byePoints) {
+    var table = { 1: 0, 2: pts.r32, 3: pts.r16, 4: pts.r8, 5: pts.sf, 6: pts.runnerUp, 7: pts.champion };
+    if (reached === 2 && isByeOnly && !byePoints) return 0;
+    return table[reached] || 0;
+  }
+  var STAGE_LABEL = { 1: '1회전 탈락', 2: '32강', 3: '16강', 4: '8강', 5: '준결승', 6: '준우승', 7: '우승' };
+
+  function classPoints(rounds, teams, pts, byePoints) {
+    var rr = reachedRounds(rounds);
+    var detail = {}; // classId -> [{team, reached, points}]
+    var total = {};
+    teams.forEach(function (t) {
+      var reached = rr.reach[t.id] || 1;
+      var p = pointsFor(reached, rr.byeOnly[t.id], pts, byePoints);
+      if (!detail[t.classId]) { detail[t.classId] = []; total[t.classId] = 0; }
+      detail[t.classId].push({ team: t, reached: reached, points: p, label: STAGE_LABEL[reached] });
+      total[t.classId] += p;
+    });
+    Object.keys(detail).forEach(function (c) { detail[c].sort(function (a, b) { return b.reached - a.reached || a.team.num - b.team.num; }); });
+    return { detail: detail, total: total };
+  }
+
+  /* 가상 대회 시뮬레이션: 모든 경기를 무작위 승자로 끝까지 진행 */
+  function simulateFull(slots) {
+    var results = {};
+    for (var r = 1; r <= 6; r++) {
+      var rounds = buildRounds(slots, results);
+      rounds[r - 1].forEach(function (m) {
+        if (m.winner) return;
+        if (m.a && m.b && m.a !== 'BYE' && m.b !== 'BYE') results[m.key] = { winner: rnd(2) ? m.a : m.b, type: 'win' };
+      });
+    }
+    return buildRounds(slots, results);
+  }
+
+  /* 검증용 가상 명단 */
+  function makeTestTeams(sizes, classIds) {
+    var teams = [];
+    classIds.forEach(function (c, ci) {
+      for (var i = 1; i <= sizes[ci]; i++) teams.push({ id: c + '-' + i, classId: c, num: i, seed: i <= 4 ? i : 0 });
+    });
+    return teams;
+  }
+
+  /* ===================================================================
+     2-10. 자체 검증: 1,000회 랜덤 생성
+     =================================================================== */
+  function verify(iterations, log) {
+    iterations = iterations || 1000;
+    log = log || function () {};
+    var classes = [{ id: 'c1', name: '3-1' }, { id: 'c2', name: '3-2' }, { id: 'c3', name: '3-3' }, { id: 'c4', name: '3-4' }];
+    var classIds = classes.map(function (c) { return c.id; });
+    var pts = { r32: 10, r16: 30, r8: 50, sf: 70, runnerUp: 100, champion: 130 };
+    var fails = 0, failMsgs = [], genFail = 0, pointFail = 0, ruleFail = 0, rejected = 0;
+    var sizeSets = [[14, 13, 14, 15], [16, 16, 16, 16], [9, 8, 8, 8], [10, 12, 14, 16], [15, 15, 16, 16], [12, 12, 12, 12]];
+    for (var it = 0; it < iterations; it++) {
+      var opts = { latin: it % 7 !== 6, byeMode: it % 5 === 4 ? 'proportional' : 'equal' };
+      var sizes = it < sizeSets.length ? sizeSets[it] : null;
+      var teams;
+      if (sizes) teams = makeTestTeams(sizes, classIds);
+      else {
+        // 33~64 사이 무작위 (반별 최소 4). 사전 검사에서 '불가능'으로 판정되는 입력은
+        // 앱이 생성 전에 거부하므로(검사 메시지가 나오는지 확인만 하고) 가능한 입력을 다시 뽑는다.
+        for (var guard = 0; guard < 100; guard++) {
+          var N = 33 + rnd(32);
+          sizes = [4, 4, 4, 4];
+          var left = N - 16;
+          while (left > 0) { var ci = rnd(4); if ((sizes[ci] + 1) * 2 <= N) { sizes[ci]++; left--; } }
+          teams = makeTestTeams(sizes, classIds);
+          var pre = precheck(teams, classes, opts);
+          if (!pre.length) break;
+          rejected++;
+          var r0 = generate(teams, classes, opts);
+          if (r0.ok || !r0.errors || !r0.errors.length) { fails++; if (failMsgs.length < 10) failMsgs.push('#' + it + ' 불가능 입력 ' + JSON.stringify(sizes) + '이 거부되지 않음'); }
+        }
+      }
+      var res = generate(teams, classes, opts);
+      if (!res.ok) { genFail++; fails++; if (failMsgs.length < 10) failMsgs.push('#' + it + ' 생성 실패 ' + JSON.stringify(sizes) + ': ' + (res.errors || res.warnings).join(' / ')); continue; }
+      var probs = checkRules(res, teams, classes, opts);
+      if (probs.length) { ruleFail++; fails++; if (failMsgs.length < 10) failMsgs.push('#' + it + ' ' + JSON.stringify(sizes) + ': ' + probs.slice(0, 3).join(' / ')); }
+      // 점수 검산: 전원 끝까지 → 총 970
+      var rounds = simulateFull(res.slots);
+      var cp = classPoints(rounds, teams, pts, true);
+      var sum = 0; classIds.forEach(function (c) { sum += cp.total[c] || 0; });
+      if (sum !== 970) { pointFail++; fails++; if (failMsgs.length < 10) failMsgs.push('#' + it + ' 점수 합계 ' + sum + ' (기대 970)'); }
+      if ((it + 1) % 100 === 0) log((it + 1) + '회 완료, 실패 ' + fails);
+    }
+    return { iterations: iterations, fails: fails, genFail: genFail, ruleFail: ruleFail, pointFail: pointFail, rejectedInputs: rejected, messages: failMsgs, pass: fails === 0 };
+  }
+
+  return {
+    SIZE: SIZE, ROUND_NAMES: ROUND_NAMES, STAGE_LABEL: STAGE_LABEL,
+    region: region, partner: partner, shuffle: shuffle,
+    precheck: precheck, generate: generate, checkRules: checkRules,
+    buildRounds: buildRounds, reachedRounds: reachedRounds, pointsFor: pointsFor, classPoints: classPoints,
+    simulateFull: simulateFull, makeTestTeams: makeTestTeams, verify: verify
+  };
+})();
+if (typeof module !== 'undefined') module.exports = Bracket;
+
+
+/* ===================================================================
+   앱 공통: 상태(state), 저장/복원, 도우미, 탭, 요약 바, 설정 탭, 명단 입력
+   =================================================================== */
+'use strict';
+var STORAGE_KEY = 'ras-sports-festival-v1';
+var CLASS_IDS = ['c1', 'c2', 'c3', 'c4'];
+
+function defaultState() {
+  return {
+    version: 1,
+    classes: [
+      { id: 'c1', name: '3-1', color: '#d32f2f' },
+      { id: 'c2', name: '3-2', color: '#1565c0' },
+      { id: 'c3', name: '3-3', color: '#2e7d32' },
+      { id: 'c4', name: '3-4', color: '#f9a825' }
+    ],
+    roster: { c1: [], c2: [], c3: [], c4: [] },
+    settings: {
+      pts: {
+        bad: { r32: 10, r16: 30, r8: 50, sf: 70, runnerUp: 100, champion: 130 },
+        kin: [100, 70, 50, 30],
+        vol: [200, 150, 100, 70],
+        laser: [100, 70, 50, 30]
+      },
+      latin: true, byeMode: 'equal', byePoints: true, courts: 5, laserMax: 10,
+      tiebreak: ['bad', 'vol', 'kin', 'laser', 'cheer'],
+      fontSize: 'normal',
+      timer: { r1: 7, later: 8, vol: 11, kin: 14 }
+    },
+    bad: { teams: [], bracket: null, results: {}, third: null, undo: [], redo: [] },
+    vol: { games: [null, null, null, null, null, null], manual: {} },
+    laser: { scores: { c1: [null, null, null, null, null, null, null], c2: [null, null, null, null, null, null, null], c3: [null, null, null, null, null, null, null], c4: [null, null, null, null, null, null, null] }, manual: {} },
+    kin: { rounds: [{}, {}, {}] },
+    overall: { overrides: {}, extra: { c1: 0, c2: 0, c3: 0, c4: 0 }, cheer: { c1: 0, c2: 0, c3: 0, c4: 0 }, manualRank: {} },
+    lottery: { winners: [] },
+    ui: { tab: 'settings' }
+  };
+}
+var S = defaultState();
+var storageOk = true;
+
+/* 깊은 병합: 저장된 데이터에 새 필드가 없어도 기본값으로 채운다 */
+function mergeDeep(base, over) {
+  if (Array.isArray(base)) return Array.isArray(over) ? over : base;
+  if (base && typeof base === 'object') {
+    var out = {};
+    Object.keys(base).forEach(function (k) { out[k] = (over && k in over) ? mergeDeep(base[k], over[k]) : base[k]; });
+    if (over && typeof over === 'object') Object.keys(over).forEach(function (k) { if (!(k in out)) out[k] = over[k]; });
+    return out;
+  }
+  return (over === undefined || over === null) ? base : over;
+}
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) S = mergeDeep(defaultState(), JSON.parse(raw));
+  } catch (e) { console.warn('불러오기 실패', e); }
+}
+var saveTimer = null;
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(S));
+    storageOk = true;
+    var el = document.getElementById('save-status');
+    if (el) { el.textContent = '저장됨 ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+  } catch (e) {
+    storageOk = false;
+    console.warn('저장 실패', e);
+  }
+  updateWarnBanner();
+}
+/* 상태를 바꾼 뒤에는 항상 commit()을 부른다: 즉시 저장 + 화면 갱신 */
+function commit(opts) {
+  opts = opts || {};
+  saveState();
+  if (!opts.noRender) render();
+  else renderSummaryBar();
+}
+
+/* ---------- 도우미 ---------- */
+function $(sel, root) { return (root || document).querySelector(sel); }
+function $all(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+function esc(s) { return String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function num(v, def) { var n = Number(v); return isFinite(n) ? n : (def || 0); }
+function classById(id) { for (var i = 0; i < S.classes.length; i++) if (S.classes[i].id === id) return S.classes[i]; return { id: id, name: '?', color: '#888' }; }
+function badge(cid, extraClass) { var c = classById(cid); return '<span class="badge ' + (extraClass || '') + '" style="background:' + esc(c.color) + '">' + esc(c.name) + '</span>'; }
+function teamById(id) { for (var i = 0; i < S.bad.teams.length; i++) if (S.bad.teams[i].id === id) return S.bad.teams[i]; return null; }
+function teamShort(t) { return classById(t.classId).name + ' ' + t.num + '조'; }
+function teamFull(t) { return teamShort(t) + ' (' + (t.p1 || '?') + '·' + (t.p2 || '?') + ')'; }
+function seedMark(seed) { return seed > 0 ? '<span class="seed">' + ['', '①', '②', '③', '④'][seed] + '</span>' : ''; }
+function todayStr() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function downloadText(filename, text, mime) {
+  var blob = new Blob(['﻿' + text], { type: mime || 'text/plain;charset=utf-8' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function fmt(n) { return (n < 0 ? '-' : '') + Math.abs(n).toLocaleString('ko-KR'); }
+
+/* ---------- 경고 배너 ---------- */
+function updateWarnBanner() {
+  var b = document.getElementById('warn-banner');
+  if (!b) return;
+  if (!storageOk) {
+    b.hidden = false;
+    b.textContent = '⚠ 자동 저장이 되지 않습니다! (사생활 보호 모드이거나 저장 공간 부족) 이 상태에서는 새로고침하면 입력이 사라집니다. 설정 탭에서 JSON 내보내기로 수시로 백업해 주세요.';
+  } else b.hidden = true;
+}
+
+/* ---------- 모달 ---------- */
+function openModal(html) { $('#modal').innerHTML = html; $('#modal-bg').classList.add('on'); }
+function closeModal() { $('#modal-bg').classList.remove('on'); $('#modal').innerHTML = ''; }
+
+/* ---------- 탭 ---------- */
+var TAB_RENDERERS = {};
+function showTab(name) {
+  S.ui.tab = name;
+  $all('nav.tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+  $all('section.tab').forEach(function (s) { s.classList.toggle('active', s.id === 'tab-' + name); });
+  saveState();
+  render();
+}
+function render() {
+  renderSummaryBar();
+  var fn = TAB_RENDERERS[S.ui.tab];
+  if (fn) fn(document.getElementById('tab-' + S.ui.tab));
+  applyFontSize();
+}
+function applyFontSize() {
+  var html = document.documentElement;
+  html.classList.remove('fs-large', 'fs-xl');
+  if (S.settings.fontSize === 'large') html.classList.add('fs-large');
+  if (S.settings.fontSize === 'xl') html.classList.add('fs-xl');
+}
+
+/* ---------- 상단 요약 바 (종합 순위) ---------- */
+function renderSummaryBar() {
+  var ov = computeOverall();
+  var html = '<span style="font-weight:900">종합 순위</span>' + ov.rows.map(function (r) {
+    var c = classById(r.classId);
+    return '<span class="chip" style="border-color:' + esc(c.color) + '"><span class="rank">' + r.rank + '위</span>' + esc(c.name) + ' <span>' + fmt(r.total) + '점</span></span>';
+  }).join('') + '<span class="small" style="margin-left:auto;color:#cbd5e1">' + esc(festivalStatusText()) + '</span>';
+  $('#summary-bar').innerHTML = html;
+}
+
+/* ===================================================================
+   설정 탭
+   =================================================================== */
+TAB_RENDERERS.settings = function (root) {
+  var st = S.settings;
+  var share = computeShare();
+  var tbNames = { bad: '배드민턴', vol: '배구', kin: '킨볼', laser: '레이저 사격', cheer: '응원·질서' };
+  root.innerHTML =
+    '<div class="grid2">' +
+    '<div class="card"><h2>1. 반 구성</h2>' +
+    S.classes.map(function (c, i) {
+      return '<div class="row" style="margin-bottom:8px">' + badge(c.id, 'lg') +
+        '<label class="field" style="flex:1"><span class="small">반 이름</span><input type="text" data-class-name="' + i + '" value="' + esc(c.name) + '"></label>' +
+        '<label class="field"><span class="small">대표 색</span><input type="color" data-class-color="' + i + '" value="' + esc(c.color) + '"></label></div>';
+    }).join('') +
+    '<p class="hint">반 이름은 앱 전체(대진표·집계표·전광판)에 바로 반영됩니다.</p></div>' +
+
+    '<div class="card"><h2>글자 크기 · 화면</h2>' +
+    '<div class="row">' + [['normal', '보통'], ['large', '크게'], ['xl', '매우 크게']].map(function (o) {
+      return '<button type="button" class="btn ' + (st.fontSize === o[0] ? 'primary' : '') + '" data-fontsize="' + o[0] + '">' + o[1] + '</button>';
+    }).join('') + '</div>' +
+    '<h3>종합 순위 동점 처리 순서</h3><p class="hint">총점이 같을 때 위에서부터 차례로 비교합니다. 끌어서(드래그) 옮기거나 ▲▼ 버튼으로 바꾸세요.</p>' +
+    '<ul class="order-list" id="tiebreak-list">' + st.tiebreak.map(function (k, i) {
+      return '<li draggable="true" data-idx="' + i + '"><span class="num">' + (i + 1) + '</span><span class="sp">' + tbNames[k] + '</span>' +
+        '<button type="button" class="btn sm" data-tb-move="' + i + ':-1" ' + (i === 0 ? 'disabled' : '') + '>▲</button><button type="button" class="btn sm" data-tb-move="' + i + ':1" ' + (i === st.tiebreak.length - 1 ? 'disabled' : '') + '>▼</button></li>';
+    }).join('') + '</ul></div>' +
+    '</div>' +
+
+    '<div class="card"><h2>2. 배점 상수</h2><div class="grid4">' +
+    '<div><h3>배드민턴 복식 (조별 최종 진출 점수)</h3>' + [['r32', '32강 진출'], ['r16', '16강 진출'], ['r8', '8강 진출'], ['sf', '준결승 진출'], ['runnerUp', '준우승'], ['champion', '우승']].map(function (o) {
+      return '<label class="inline"><span style="min-width:7em">' + o[1] + '</span><input type="number" inputmode="numeric" data-pts-bad="' + o[0] + '" value="' + st.pts.bad[o[0]] + '"></label>';
+    }).join('') + '</div>' +
+    ['kin|킨볼 (1·2·3조 각각)', 'vol|배구 리그전', 'laser|레이저 사격'].map(function (s) {
+      var k = s.split('|')[0], name = s.split('|')[1];
+      return '<div><h3>' + name + '</h3>' + [0, 1, 2, 3].map(function (i) {
+        return '<label class="inline"><span style="min-width:4em">' + (i + 1) + '위</span><input type="number" inputmode="numeric" data-pts-arr="' + k + ':' + i + '" value="' + st.pts[k][i] + '"></label>';
+      }).join('') + '</div>';
+    }).join('') + '</div>' +
+    '<h3>종목 비중 (현재 배점 기준, 응원·질서 제외)</h3><div class="table-wrap"><table style="max-width:600px"><tr><th>종목</th><th>배분 총점</th><th>비중</th></tr>' +
+    share.rows.map(function (r) { return '<tr><td>' + r.name + '</td><td>' + fmt(r.total) + '점</td><td>' + r.pct.toFixed(1) + '%</td></tr>'; }).join('') +
+    '<tr><th>합계</th><th>' + fmt(share.sum) + '점</th><th>100%</th></tr></table></div>' +
+    '<p class="hint">배드민턴 970점은 32강 탈락 16조×10 + 16강 탈락 8조×30 + 8강 탈락 4조×50 + 준결승 탈락 2조×70 + 준우승 100 + 우승 130으로 계산합니다.</p></div>' +
+
+    '<div class="grid2">' +
+    '<div class="card"><h2>3. 배드민턴 대진 설정</h2>' +
+    '<label class="inline"><input type="checkbox" data-set="latin" ' + (st.latin ? 'checked' : '') + '> 라틴 방진으로 반별 시드를 고르게 배치 (같은 반 시드끼리 준결승 전 대결 방지, 권장)</label>' +
+    '<div class="row" style="margin-top:8px"><span>부전승 배분 방식:</span>' +
+    '<label class="inline"><input type="radio" name="byeMode" value="equal" ' + (st.byeMode === 'equal' ? 'checked' : '') + '> 반별 균등(기본)</label>' +
+    '<label class="inline"><input type="radio" name="byeMode" value="proportional" ' + (st.byeMode === 'proportional' ? 'checked' : '') + '> 반별 인원 비례</label></div>' +
+    '<p class="hint">반별 조 수 차이가 클 때 "균등"은 조 수가 적은 반에 유리하게 작용합니다. 그럴 때는 "인원 비례"를 고르세요.</p>' +
+    '<label class="inline"><input type="checkbox" data-set="byePoints" ' + (st.byePoints ? 'checked' : '') + '> 부전승으로 32강에 오른 조도 32강 진출 점수 인정 (기본 ON)</label>' +
+    '<label class="inline"><span>코트 수</span><input type="number" inputmode="numeric" min="1" max="12" data-set-num="courts" value="' + st.courts + '">면</label>' +
+    '<h3>타이머 (분)</h3>' +
+    '<label class="inline"><span style="min-width:9em">배드민턴 1회전</span><input type="number" inputmode="numeric" data-timer="r1" value="' + st.timer.r1 + '"></label>' +
+    '<label class="inline"><span style="min-width:9em">배드민턴 2회전 이후</span><input type="number" inputmode="numeric" data-timer="later" value="' + st.timer.later + '"></label>' +
+    '<label class="inline"><span style="min-width:9em">배구 경기당</span><input type="number" inputmode="numeric" data-timer="vol" value="' + st.timer.vol + '"></label>' +
+    '<label class="inline"><span style="min-width:9em">킨볼</span><input type="number" inputmode="numeric" data-timer="kin" value="' + st.timer.kin + '"></label>' +
+    '<h3>레이저 사격</h3><label class="inline"><span>사로별 만점</span><input type="number" inputmode="numeric" min="1" data-set-num="laserMax" value="' + st.laserMax + '">점</label>' +
+    '</div>' +
+
+    '<div class="card"><h2>4. 데이터 관리</h2>' +
+    '<p class="hint">모든 입력은 이 기기의 브라우저(localStorage)에 자동 저장됩니다. 다른 기기로 옮기거나 만약을 대비해 JSON 파일로 백업하세요. 외부로 전송되는 데이터는 없습니다.</p>' +
+    '<div class="row" style="margin:10px 0"><button type="button" class="btn primary" id="btn-export-json">⬇ JSON 전체 내보내기</button>' +
+    '<label class="btn">⬆ JSON 불러오기 <input type="file" accept=".json,application/json" id="file-import-json" hidden></label></div>' +
+    '<h3>전체 초기화</h3><label class="inline"><input type="checkbox" id="reset-check"> 모든 데이터(명단·대진표·점수·당첨자)를 지우는 데 동의합니다</label>' +
+    '<div><button type="button" class="btn danger" id="btn-reset" disabled>전체 초기화 실행</button></div>' +
+    '<details style="margin-top:16px"><summary class="hint" style="cursor:pointer">개발자용: 대진 알고리즘 자체 검증</summary>' +
+    '<p class="hint">가상 명단으로 대진표를 1,000회 랜덤 생성해 시드 규칙 1~4, 부전승 균등, 시드 16개의 16강 구역 분리, 포지션 중복·누락, 총점 970점을 검사합니다.</p>' +
+    '<button type="button" class="btn" id="btn-verify">검증 실행 (1,000회)</button><pre id="verify-out" class="small" style="white-space:pre-wrap"></pre></details>' +
+    '</div></div>' +
+
+    '<div class="card" id="roster-card"><h2>5. 학생 명단 (배드민턴 조 편성 · 경품 추첨 공용)</h2>' +
+    '<p class="hint">반마다 <b>번호와 이름</b>을 입력합니다. 엑셀에서 두 열(번호, 이름)을 복사해 붙여넣기 하면 한 번에 들어갑니다. 한 줄에 한 명: <code>1[탭]김○○</code> / <code>1,김○○</code> / <code>1 김○○</code> 모두 됩니다.</p>' +
+    '<div class="grid4">' + S.classes.map(function (c) { return renderRosterCard(c); }).join('') + '</div></div>';
+
+  // --- 이벤트 ---
+  $all('[data-class-name]', root).forEach(function (el) { el.onchange = function () { S.classes[num(el.dataset.className)].name = el.value.trim() || ('반' + (num(el.dataset.className) + 1)); commit(); }; });
+  $all('[data-class-color]', root).forEach(function (el) { el.onchange = function () { S.classes[num(el.dataset.classColor)].color = el.value; commit(); }; });
+  $all('[data-fontsize]', root).forEach(function (el) { el.onclick = function () { S.settings.fontSize = el.dataset.fontsize; commit(); }; });
+  $all('[data-pts-bad]', root).forEach(function (el) { el.onchange = function () { S.settings.pts.bad[el.dataset.ptsBad] = num(el.value); commit(); }; });
+  $all('[data-pts-arr]', root).forEach(function (el) { el.onchange = function () { var p = el.dataset.ptsArr.split(':'); S.settings.pts[p[0]][num(p[1])] = num(el.value); commit(); }; });
+  $all('[data-set]', root).forEach(function (el) { el.onchange = function () { S.settings[el.dataset.set] = el.checked; commit(); }; });
+  $all('[data-set-num]', root).forEach(function (el) { el.onchange = function () { S.settings[el.dataset.setNum] = Math.max(1, num(el.value, 1)); commit(); }; });
+  $all('input[name=byeMode]', root).forEach(function (el) { el.onchange = function () { S.settings.byeMode = el.value; commit(); }; });
+  $all('[data-timer]', root).forEach(function (el) { el.onchange = function () { S.settings.timer[el.dataset.timer] = Math.max(0.5, num(el.value, 1)); commit(); }; });
+  $all('[data-tb-move]', root).forEach(function (el) {
+    el.onclick = function () {
+      var p = el.dataset.tbMove.split(':'), i = num(p[0]), d = num(p[1]); var arr = S.settings.tiebreak; var j = i + d;
+      if (j < 0 || j >= arr.length) return; var t = arr[i]; arr[i] = arr[j]; arr[j] = t; commit();
+    };
+  });
+  // 드래그로 순서 바꾸기
+  var dragFrom = null;
+  $all('#tiebreak-list li', root).forEach(function (li) {
+    li.addEventListener('dragstart', function () { dragFrom = num(li.dataset.idx); li.classList.add('drag'); });
+    li.addEventListener('dragover', function (e) { e.preventDefault(); });
+    li.addEventListener('drop', function (e) {
+      e.preventDefault(); var to = num(li.dataset.idx); if (dragFrom === null || dragFrom === to) return;
+      var arr = S.settings.tiebreak; var item = arr.splice(dragFrom, 1)[0]; arr.splice(to, 0, item); dragFrom = null; commit();
+    });
+    li.addEventListener('dragend', function () { li.classList.remove('drag'); });
+  });
+  $('#btn-export-json', root).onclick = exportJson;
+  $('#file-import-json', root).onchange = function (e) { importJson(e.target.files[0]); e.target.value = ''; };
+  $('#reset-check', root).onchange = function (e) { $('#btn-reset', root).disabled = !e.target.checked; };
+  $('#btn-reset', root).onclick = function () {
+    if (!$('#reset-check', root).checked) return;
+    if (!confirm('정말 모든 데이터를 지울까요? 되돌릴 수 없습니다. (먼저 JSON 내보내기로 백업하는 것을 권장합니다)')) return;
+    S = defaultState(); S.ui.tab = 'settings'; commit();
+  };
+  $('#btn-verify', root).onclick = function () {
+    var out = $('#verify-out', root); out.textContent = '검증 중... (몇 초 걸립니다)';
+    setTimeout(function () {
+      var r = Bracket.verify(1000);
+      out.textContent = (r.pass ? '✅ 통과: ' : '❌ 실패: ') + r.iterations + '회 생성, 실패 ' + r.fails + '건 (규칙 위반 ' + r.ruleFail + ', 생성 실패 ' + r.genFail + ', 점수 검산 실패 ' + r.pointFail + ')\n' +
+        '사전 검사로 거부된 불가능 입력(조 수 극단적 편중): ' + r.rejectedInputs + '건 — 모두 안내 메시지와 함께 거부됨\n' + r.messages.join('\n');
+    }, 30);
+  };
+  bindRosterEvents(root);
+};
+
+/* ---------- 종목 비중 ---------- */
+function computeShare() {
+  var p = S.settings.pts;
+  var bad = 16 * p.bad.r32 + 8 * p.bad.r16 + 4 * p.bad.r8 + 2 * p.bad.sf + p.bad.runnerUp + p.bad.champion;
+  var sumArr = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
+  var rows = [
+    { name: '배드민턴', total: bad }, { name: '킨볼 (3조 합계)', total: sumArr(p.kin) * 3 },
+    { name: '배구', total: sumArr(p.vol) }, { name: '레이저 사격', total: sumArr(p.laser) }
+  ];
+  var sum = rows.reduce(function (a, r) { return a + r.total; }, 0);
+  rows.forEach(function (r) { r.pct = sum ? r.total * 100 / sum : 0; });
+  return { rows: rows, sum: sum };
+}
+
+/* ---------- 명단 입력 ---------- */
+function parseRosterText(text) {
+  var out = [];
+  String(text || '').split(/\r?\n/).forEach(function (line) {
+    line = line.trim(); if (!line) return;
+    var m = line.match(/^(\d+)\s*[\t, ]\s*(.+)$/);
+    if (m) out.push({ no: num(m[1]), name: m[2].replace(/[",]/g, '').trim() });
+    else { var m2 = line.match(/^(.+?)\s*[\t, ]\s*(\d+)$/); if (m2) out.push({ no: num(m2[2]), name: m2[1].replace(/[",]/g, '').trim() }); }
+  });
+  return out.filter(function (s) { return s.name; });
+}
+function addStudents(cid, list) {
+  var r = S.roster[cid];
+  list.forEach(function (s) {
+    var dup = r.some(function (x) { return x.no === s.no && x.name === s.name; });
+    if (!dup) r.push({ no: s.no, name: s.name });
+  });
+  r.sort(function (a, b) { return a.no - b.no; });
+}
+function renderRosterCard(c) {
+  var list = S.roster[c.id] || [];
+  return '<div class="card tight" data-roster="' + c.id + '"><div class="row between">' + badge(c.id, 'lg') + '<span class="muted">' + list.length + '명</span></div>' +
+    '<div class="row" style="margin:8px 0"><input type="number" inputmode="numeric" placeholder="번호" data-add-no style="max-width:90px"><input type="text" placeholder="이름" data-add-name style="flex:1;min-width:100px"><button type="button" class="btn sm primary" data-add-btn>추가</button></div>' +
+    '<textarea rows="3" placeholder="여러 줄 붙여넣기\n1\t김○○\n2,이○○\n3 박○○" data-paste></textarea>' +
+    '<div class="row" style="margin:6px 0"><button type="button" class="btn sm" data-paste-btn>붙여넣은 내용 추가</button><label class="btn sm">CSV 불러오기 <input type="file" accept=".csv,.txt,text/csv" data-csv hidden></label><button type="button" class="btn sm danger" data-clear-roster>전체 삭제</button></div>' +
+    '<div class="table-wrap" style="max-height:260px;overflow:auto"><table><tr><th>번호</th><th>이름</th><th></th></tr>' +
+    list.map(function (s, i) { return '<tr><td>' + s.no + '</td><td class="left">' + esc(s.name) + '</td><td><button type="button" class="btn sm ghost" data-del="' + i + '">✕</button></td></tr>'; }).join('') +
+    (list.length ? '' : '<tr><td colspan="3" class="muted">아직 명단이 없습니다</td></tr>') + '</table></div></div>';
+}
+function bindRosterEvents(root) {
+  $all('[data-roster]', root).forEach(function (card) {
+    var cid = card.dataset.roster;
+    $('[data-add-btn]', card).onclick = function () {
+      var no = num($('[data-add-no]', card).value), name = $('[data-add-name]', card).value.trim();
+      if (!name) { alert('이름을 입력하세요.'); return; }
+      addStudents(cid, [{ no: no, name: name }]); commit();
+    };
+    $('[data-add-name]', card).onkeydown = function (e) { if (e.key === 'Enter') $('[data-add-btn]', card).click(); };
+    $('[data-paste-btn]', card).onclick = function () {
+      var list = parseRosterText($('[data-paste]', card).value);
+      if (!list.length) { alert('읽을 수 있는 줄이 없습니다. "번호 이름" 형식으로 한 줄에 한 명씩 넣어 주세요.'); return; }
+      addStudents(cid, list); commit();
+    };
+    $('[data-csv]', card).onchange = function (e) {
+      var f = e.target.files[0]; if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () { var list = parseRosterText(reader.result); if (!list.length) alert('CSV에서 읽을 수 있는 줄이 없습니다.'); else { addStudents(cid, list); commit(); } };
+      reader.readAsText(f, 'utf-8'); e.target.value = '';
+    };
+    $('[data-clear-roster]', card).onclick = function () { if (confirm(classById(cid).name + ' 반 명단을 모두 지울까요?')) { S.roster[cid] = []; commit(); } };
+    $all('[data-del]', card).forEach(function (b) { b.onclick = function () { S.roster[cid].splice(num(b.dataset.del), 1); commit(); }; });
+  });
+}
+
+/* ---------- JSON 내보내기 / 불러오기 ---------- */
+function exportJson() {
+  downloadText('RAS축제_백업_' + todayStr() + '.json', JSON.stringify(S, null, 2), 'application/json');
+}
+function importJson(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var data = JSON.parse(reader.result);
+      if (!data || !data.classes || !data.settings) throw new Error('형식 오류');
+      if (!confirm('현재 데이터를 불러온 파일의 내용으로 바꿉니다. 계속할까요?')) return;
+      S = mergeDeep(defaultState(), data); commit();
+      alert('불러오기 완료');
+    } catch (e) { alert('JSON 파일을 읽을 수 없습니다: ' + e.message); }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+
+/* ===================================================================
+   배드민턴 탭: 조 편성, 대진표 생성, 승자 선택, Undo/Redo, 몰수, 코트 호출판, 점수
+   =================================================================== */
+function newId() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function renumberTeams() {
+  CLASS_IDS.forEach(function (cid) {
+    var n = 0;
+    S.bad.teams.forEach(function (t) { if (t.classId === cid) t.num = ++n; });
+  });
+}
+/* 조 편성을 바꾸기 전에: 대진표가 이미 있으면 지워야 한다 */
+function confirmTeamChange() {
+  if (!S.bad.bracket) return true;
+  if (!confirm('이미 만든 대진표가 있습니다. 조 편성을 바꾸면 대진표와 경기 결과가 모두 지워집니다. 계속할까요?')) return false;
+  S.bad.bracket = null; S.bad.results = {}; S.bad.third = null; S.bad.undo = []; S.bad.redo = [];
+  return true;
+}
+function badTeamsForAlgo() {
+  return S.bad.teams.map(function (t) { return { id: t.id, classId: t.classId, num: t.num, seed: num(t.seed) }; });
+}
+function badOpts() { return { latin: S.settings.latin, byeMode: S.settings.byeMode }; }
+function currentRounds() {
+  if (!S.bad.bracket) return null;
+  return Bracket.buildRounds(S.bad.bracket.slots, S.bad.results);
+}
+/* 코트·턴 배정: 라운드별로 실제 경기(부전승 제외)에 순서대로 */
+function courtAssignments(rounds) {
+  var courts = Math.max(1, num(S.settings.courts, 5));
+  var map = {};
+  rounds.forEach(function (ms) {
+    var k = 0;
+    ms.forEach(function (m) {
+      if (m.type === 'bye') return;
+      map[m.key] = { court: (k % courts) + 1, turn: Math.floor(k / courts) + 1 };
+      k++;
+    });
+  });
+  return map;
+}
+function badStatus() {
+  var rounds = currentRounds();
+  if (!rounds) return { text: '배드민턴 대진 미생성', round: 0 };
+  for (var r = 0; r < 6; r++) {
+    var pending = rounds[r].some(function (m) { return m.type !== 'bye' && !m.winner; });
+    if (pending) return { text: '배드민턴 ' + Bracket.ROUND_NAMES[r] + ' 진행 중', round: r + 1 };
+  }
+  var champ = rounds[5][0].winner;
+  return { text: '배드민턴 종료 — 우승 ' + (champ && teamById(champ) ? teamShort(teamById(champ)) : ''), round: 7 };
+}
+function badClassPoints() {
+  var rounds = currentRounds();
+  if (!rounds) { var z = {}; CLASS_IDS.forEach(function (c) { z[c] = 0; }); return { total: z, detail: {} }; }
+  return Bracket.classPoints(rounds, S.bad.teams, S.settings.pts.bad, S.settings.byePoints);
+}
+function sideHtml(id, m, pos) {
+  if (id === 'BYE') return '<div class="side bye">부전승</div>';
+  if (!id) return '<div class="side empty">(대기)</div>';
+  var t = teamById(id); if (!t) return '<div class="side empty">?</div>';
+  var cls = 'side';
+  if (m.winner) cls += (m.winner === id ? ' winner' : ' loser');
+  var mark = '';
+  if (m.winner === id && m.type === 'bye') mark = '부전승';
+  else if (m.winner === id) mark = '승';
+  else if (m.winner && m.type === 'forfeit') mark = '몰수';
+  return '<div class="' + cls + '">' + badge(t.classId) + '<b>' + t.num + '조</b>' + seedMark(num(t.seed)) + '<span class="names">' + esc(t.p1) + '·' + esc(t.p2) + '</span><span class="mark">' + mark + '</span></div>';
+}
+function pushUndo() {
+  S.bad.undo.push(JSON.stringify({ results: S.bad.results, third: S.bad.third }));
+  if (S.bad.undo.length > 100) S.bad.undo.shift();
+  S.bad.redo = [];
+}
+function badUndo() {
+  if (!S.bad.undo.length) return;
+  S.bad.redo.push(JSON.stringify({ results: S.bad.results, third: S.bad.third }));
+  var s = JSON.parse(S.bad.undo.pop()); S.bad.results = s.results; S.bad.third = s.third; commit();
+}
+function badRedo() {
+  if (!S.bad.redo.length) return;
+  S.bad.undo.push(JSON.stringify({ results: S.bad.results, third: S.bad.third }));
+  var s = JSON.parse(S.bad.redo.pop()); S.bad.results = s.results; S.bad.third = s.third; commit();
+}
+/* 결과 저장: 이후 라운드의 관련 결과는 지운다 */
+function setMatchResult(r, i, winner, type) {
+  pushUndo();
+  var key = r + '-' + i;
+  if (winner) S.bad.results[key] = { winner: winner, type: type || 'win' }; else delete S.bad.results[key];
+  var idx = i;
+  for (var rr = r + 1; rr <= 6; rr++) { idx = Math.floor(idx / 2); delete S.bad.results[rr + '-' + idx]; }
+  if (r >= 5) S.bad.third = null;
+  commit();
+}
+function openMatchModal(m) {
+  if (!m.a || !m.b || m.a === 'BYE' || m.b === 'BYE') return;
+  var ta = teamById(m.a), tb = teamById(m.b);
+  if (!ta || !tb) return;
+  openModal('<h2>' + Bracket.ROUND_NAMES[m.r - 1] + ' ' + (m.i + 1) + '경기 — 승자 선택</h2>' +
+    '<p>' + badge(ta.classId) + ' ' + esc(teamFull(ta)) + ' <b>vs</b> ' + badge(tb.classId) + ' ' + esc(teamFull(tb)) + '</p>' +
+    '<button type="button" class="btn ok" data-win="a">✅ ' + esc(teamShort(ta)) + ' 승</button>' +
+    '<button type="button" class="btn ok" data-win="b">✅ ' + esc(teamShort(tb)) + ' 승</button>' +
+    '<button type="button" class="btn warn" data-forfeit="a">⛔ ' + esc(teamShort(ta)) + ' 몰수패 (미출석·경기 거부) → ' + esc(teamShort(tb)) + ' 진출</button>' +
+    '<button type="button" class="btn warn" data-forfeit="b">⛔ ' + esc(teamShort(tb)) + ' 몰수패 → ' + esc(teamShort(ta)) + ' 진출</button>' +
+    (m.winner ? '<button type="button" class="btn danger" data-clear>↩ 이 경기 결과 취소 (이후 라운드 결과도 지워짐)</button>' : '') +
+    '<button type="button" class="btn" data-close>닫기</button>');
+  var md = $('#modal');
+  $all('[data-win]', md).forEach(function (b) { b.onclick = function () { closeModal(); setMatchResult(m.r, m.i, b.dataset.win === 'a' ? m.a : m.b, 'win'); }; });
+  $all('[data-forfeit]', md).forEach(function (b) { b.onclick = function () { closeModal(); setMatchResult(m.r, m.i, b.dataset.forfeit === 'a' ? m.b : m.a, 'forfeit'); }; });
+  var c = $('[data-clear]', md); if (c) c.onclick = function () { closeModal(); setMatchResult(m.r, m.i, null); };
+  $('[data-close]', md).onclick = closeModal;
+}
+function thirdPlaceInfo(rounds) {
+  var sf = rounds[4];
+  if (!sf[0].winner || !sf[1].winner) return null;
+  var la = sf[0].winner === sf[0].a ? sf[0].b : sf[0].a;
+  var lb = sf[1].winner === sf[1].a ? sf[1].b : sf[1].a;
+  if (!la || !lb || la === 'BYE' || lb === 'BYE') return null;
+  return { a: la, b: lb, winner: S.bad.third && (S.bad.third.winner === la || S.bad.third.winner === lb) ? S.bad.third.winner : null, type: S.bad.third ? S.bad.third.type : null };
+}
+
+TAB_RENDERERS.bad = function (root) {
+  var teams = S.bad.teams;
+  var N = teams.length;
+  var pre = Bracket.precheck(badTeamsForAlgo(), S.classes, badOpts());
+  var bracket = S.bad.bracket;
+  var html = '';
+
+  // ---- 1. 조 편성 ----
+  html += '<div class="card no-print"><details ' + (bracket ? '' : 'open') + '><summary style="cursor:pointer"><h2 style="display:inline">1. 조 편성 (복식 2인 1조, 같은 반끼리) — 현재 ' + N + '조</h2></summary>' +
+    '<p class="hint">반마다 조를 입력하고 <b>1~4번 시드를 정확히 4조</b> 지정하세요. 선수 이름은 설정 탭의 명단에서 고르거나 직접 입력합니다. 여러 줄 붙여넣기: 한 줄에 <code>이름1, 이름2</code> (시드는 끝에 <code>S1</code>~<code>S4</code>).</p>' +
+    '<div class="grid4">' + S.classes.map(function (c) {
+      var list = teams.filter(function (t) { return t.classId === c.id; });
+      var seeds = list.filter(function (t) { return num(t.seed) > 0; }).length;
+      return '<div class="card tight" data-teamcard="' + c.id + '">' +
+        '<div class="row between">' + badge(c.id, 'lg') + '<span class="muted">' + list.length + '조 · 시드 ' + seeds + '/4</span></div>' +
+        '<datalist id="dl-' + c.id + '">' + (S.roster[c.id] || []).map(function (s) { return '<option value="' + esc(s.name) + '">' + s.no + '번</option>'; }).join('') + '</datalist>' +
+        '<div class="row" style="margin:8px 0"><input type="text" list="dl-' + c.id + '" placeholder="선수1" data-p1 style="flex:1;min-width:90px"><input type="text" list="dl-' + c.id + '" placeholder="선수2" data-p2 style="flex:1;min-width:90px">' +
+        '<select data-seed style="width:auto"><option value="0">무시드</option><option value="1">1번 시드</option><option value="2">2번 시드</option><option value="3">3번 시드</option><option value="4">4번 시드</option></select>' +
+        '<button type="button" class="btn sm primary" data-add-team>추가</button></div>' +
+        '<textarea rows="2" placeholder="여러 줄 붙여넣기: 김○○, 이○○ S1" data-team-paste></textarea><div class="row" style="margin:6px 0"><button type="button" class="btn sm" data-team-paste-btn>붙여넣은 내용 추가</button><button type="button" class="btn sm danger" data-team-clear>이 반 조 전체 삭제</button></div>' +
+        '<div class="table-wrap" style="max-height:300px;overflow:auto"><table><tr><th>조</th><th>선수</th><th>시드</th><th></th></tr>' +
+        list.map(function (t) {
+          return '<tr><td><b>' + t.num + '조</b></td><td class="left">' + esc(t.p1) + '·' + esc(t.p2) + '</td><td><select data-seed-of="' + t.id + '" style="min-width:5em">' +
+            [0, 1, 2, 3, 4].map(function (s) { return '<option value="' + s + '" ' + (num(t.seed) === s ? 'selected' : '') + '>' + (s ? s + '번' : '무시드') + '</option>'; }).join('') +
+            '</select></td><td><button type="button" class="btn sm ghost" data-del-team="' + t.id + '">✕</button></td></tr>';
+        }).join('') + (list.length ? '' : '<tr><td colspan="4" class="muted">조가 없습니다</td></tr>') + '</table></div></div>';
+    }).join('') + '</div></details></div>';
+
+  // ---- 2. 대진표 생성 ----
+  var M = N - 32, B = 64 - N;
+  html += '<div class="card no-print"><h2>2. 대진표 생성</h2>' +
+    '<div class="row"><span>참가 <b>' + N + '조</b></span><span>→ 1회전 경기 <b>' + (N > 32 ? M : '-') + '</b></span><span>부전승 <b>' + (N > 32 && N <= 64 ? B : '-') + '</b></span>' +
+    '<span class="muted small">(라틴 방진 ' + (S.settings.latin ? 'ON' : 'OFF') + ' · 부전승 ' + (S.settings.byeMode === 'equal' ? '반별 균등' : '인원 비례') + ' · 코트 ' + S.settings.courts + '면)</span></div>' +
+    (pre.length ? '<div class="banner warn" style="margin-top:10px">대진을 만들기 전에 확인하세요:<ul>' + pre.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join('') + '</ul></div>' : '') +
+    '<div class="row" style="margin-top:10px"><button type="button" class="btn big primary" id="btn-gen" ' + (pre.length ? 'disabled' : '') + '>🎲 랜덤 대진표 생성</button>' +
+    (bracket ? '<button type="button" class="btn danger" id="btn-del-bracket">대진표 삭제</button>' : '') + '</div>' +
+    (bracket && bracket.warnings && bracket.warnings.length ? '<div class="banner danger" style="margin-top:10px">⚠ 경고<ul>' + bracket.warnings.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' +
+      (bracket.violations && bracket.violations.length ? '<div>위반 짝: ' + bracket.violations.map(function (k) { var a = teamById(bracket.slots[2 * k - 1]), b = teamById(bracket.slots[2 * k]); return (k) + '경기 (' + (a ? teamShort(a) : '?') + ' vs ' + (b ? teamShort(b) : '?') + ')'; }).join(', ') + '</div>' : '') + '</div>' : '') +
+    (bracket ? '<p class="hint" style="margin-top:8px">생성 ' + esc(bracket.generatedAt || '') + ' · 반별 부전승: ' + CLASS_IDS.map(function (c) { return classById(c).name + ' ' + (bracket.byeCount[c] || 0) + '개'; }).join(', ') + '</p>' : '') +
+    '</div>';
+
+  if (bracket) {
+    var rounds = currentRounds();
+    var courts = courtAssignments(rounds);
+    var st = badStatus();
+    var third = thirdPlaceInfo(rounds);
+
+    // ---- 3. 호출판 + 조작 ----
+    var curRound = st.round >= 1 && st.round <= 6 ? rounds[st.round - 1] : null;
+    html += '<div class="card no-print"><div class="row between"><h2>3. 진행 — ' + esc(st.text) + '</h2>' +
+      '<div class="row"><button type="button" class="btn" id="btn-undo" ' + (S.bad.undo.length ? '' : 'disabled') + '>↶ 되돌리기 (' + S.bad.undo.length + ')</button><button type="button" class="btn" id="btn-redo" ' + (S.bad.redo.length ? '' : 'disabled') + '>↷ 다시 실행</button>' +
+      '<button type="button" class="btn" id="btn-print-bracket">🖨 인쇄</button><button type="button" class="btn" id="btn-png-bracket">🖼 PNG 저장</button></div></div>' +
+      '<p class="hint">경기 블록을 누르면 승자를 고를 수 있습니다. 몰수패도 같은 창에서 처리합니다. 다음 경기 호출판은 현재 라운드의 남은 경기를 코트·턴 순으로 보여줍니다.</p>';
+    if (curRound) {
+      var items = curRound.filter(function (m) { return m.type !== 'bye' && !m.winner; });
+      html += '<h3>📣 다음 경기 호출판 — ' + Bracket.ROUND_NAMES[st.round - 1] + ' (남은 ' + items.length + '경기)</h3><div class="callboard">' + items.map(function (m) {
+        var ca = courts[m.key]; var ta = teamById(m.a), tb = teamById(m.b);
+        var ready = ta && tb;
+        return '<div class="item" style="' + (ready ? '' : 'opacity:.55') + '"><div class="court">' + ca.turn + '턴 / ' + ca.court + '코트</div><div>' + (ta ? badge(ta.classId) + ' ' + esc(teamShort(ta)) : '<span class="muted">(대기)</span>') + ' <b>vs</b> ' + (tb ? badge(tb.classId) + ' ' + esc(teamShort(tb)) : '<span class="muted">(대기)</span>') + '</div>' +
+          (ready ? '<button type="button" class="btn sm" data-open-match="' + m.key + '" style="margin-top:6px">결과 입력</button>' : '') + '</div>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+
+    // ---- 4. 대진표 ----
+    html += '<div class="card bracket-card"><h2 class="print-only">RAS 스포츠 축제 — 배드민턴 복식 대진표</h2><div class="bracket-scroll"><div class="bracket" id="bracket-view">' +
+      rounds.map(function (ms, ri) {
+        return '<div class="col"><h4>' + Bracket.ROUND_NAMES[ri] + '</h4><div class="matches">' + ms.map(function (m) {
+          var ca = courts[m.key];
+          var clickable = m.a && m.b && m.a !== 'BYE' && m.b !== 'BYE';
+          var cls = 'match' + (m.winner && m.type !== 'bye' ? ' done' : '') + (clickable && !m.winner ? ' ready' : '');
+          return '<div class="' + cls + '" ' + (clickable ? 'data-open-match="' + m.key + '"' : '') + '><div class="label">' + (m.i + 1) + '경기' + (ca ? ' · ' + ca.turn + '턴 ' + ca.court + '코트' : '') + '</div>' + sideHtml(m.a, m, 'a') + sideHtml(m.b, m, 'b') + '</div>';
+        }).join('') + '</div></div>';
+      }).join('') +
+      // 3·4위전 열
+      '<div class="col"><h4>3·4위전</h4><div class="matches">' + (third ?
+        '<div class="match ' + (third.winner ? 'done' : 'ready') + '" data-open-third="1"><div class="label">준결승 패자 간 경기</div>' + sideHtml(third.a, third, 'a') + sideHtml(third.b, third, 'b') + '</div>'
+        : '<div class="match"><div class="side empty">준결승 2경기가 끝나면 생깁니다</div></div>') +
+      '<p class="hint" style="padding:6px">3·4위전은 반 점수에 영향이 없습니다. 두 조 모두 "준결승 진출" ' + S.settings.pts.bad.sf + '점으로 확정됩니다.</p></div></div>' +
+      '</div></div></div>';
+
+    // ---- 5. 점수 ----
+    var cp = badClassPoints();
+    html += '<div class="card"><h2>5. 배드민턴 반 점수 (조별 최종 진출 점수의 합, 비누적)</h2>' +
+      '<p class="hint">각 조는 마지막으로 도달한 라운드의 점수 하나만 반영됩니다. 1회전 패 0 / 32강 ' + S.settings.pts.bad.r32 + ' / 16강 ' + S.settings.pts.bad.r16 + ' / 8강 ' + S.settings.pts.bad.r8 + ' / 준결승 ' + S.settings.pts.bad.sf + ' / 준우승 ' + S.settings.pts.bad.runnerUp + ' / 우승 ' + S.settings.pts.bad.champion + '. 부전승 32강 진출 점수 인정: ' + (S.settings.byePoints ? 'ON' : 'OFF') + '</p>' +
+      S.classes.map(function (c) {
+        var d = cp.detail[c.id] || [];
+        return '<details style="margin:6px 0"><summary style="cursor:pointer">' + badge(c.id) + ' <b>' + fmt(cp.total[c.id] || 0) + '점</b> <span class="muted small">(' + d.length + '조)</span></summary><div style="padding:6px 0 0 10px">' +
+          (d.length ? d.map(function (x) { return x.label + ' ' + x.team.num + '조(' + x.points + ')'; }).join(' + ') + ' = <b>' + fmt(cp.total[c.id]) + '점</b>' : '<span class="muted">조 없음</span>') + '</div></details>';
+      }).join('') + '</div>';
+  }
+  root.innerHTML = html;
+
+  // ---- 이벤트 ----
+  $all('[data-teamcard]', root).forEach(function (card) {
+    var cid = card.dataset.teamcard;
+    $('[data-add-team]', card).onclick = function () {
+      var p1 = $('[data-p1]', card).value.trim(), p2 = $('[data-p2]', card).value.trim(), seed = num($('[data-seed]', card).value);
+      if (!p1 || !p2) { alert('선수 두 명의 이름을 모두 입력하세요.'); return; }
+      if (!confirmTeamChange()) return;
+      S.bad.teams.push({ id: newId(), classId: cid, num: 0, p1: p1, p2: p2, seed: seed }); renumberTeams(); commit();
+    };
+    $('[data-p2]', card).onkeydown = function (e) { if (e.key === 'Enter') $('[data-add-team]', card).click(); };
+    $('[data-team-paste-btn]', card).onclick = function () {
+      var lines = $('[data-team-paste]', card).value.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+      var added = [];
+      lines.forEach(function (l) {
+        var seed = 0; var ms = l.match(/\b[Ss](\d)\b/); if (ms) { seed = num(ms[1]); l = l.replace(ms[0], ''); }
+        var parts = l.split(/[,\t·/]+|\s+/).map(function (x) { return x.trim(); }).filter(Boolean);
+        if (parts.length >= 2) added.push({ id: newId(), classId: cid, num: 0, p1: parts[0], p2: parts[1], seed: seed > 4 ? 0 : seed });
+      });
+      if (!added.length) { alert('읽을 수 있는 줄이 없습니다. 한 줄에 "이름1, 이름2" 형식으로 넣어 주세요.'); return; }
+      if (!confirmTeamChange()) return;
+      added.forEach(function (t) { S.bad.teams.push(t); }); renumberTeams(); commit();
+    };
+    $('[data-team-clear]', card).onclick = function () {
+      if (!confirm(classById(cid).name + ' 반 조를 모두 지울까요?')) return;
+      if (!confirmTeamChange()) return;
+      S.bad.teams = S.bad.teams.filter(function (t) { return t.classId !== cid; }); renumberTeams(); commit();
+    };
+    $all('[data-seed-of]', card).forEach(function (sel) {
+      sel.onchange = function () {
+        if (!confirmTeamChange()) { render(); return; }
+        var t = teamById(sel.dataset.seedOf); if (t) t.seed = num(sel.value); commit();
+      };
+    });
+    $all('[data-del-team]', card).forEach(function (b) {
+      b.onclick = function () {
+        if (!confirmTeamChange()) return;
+        S.bad.teams = S.bad.teams.filter(function (t) { return t.id !== b.dataset.delTeam; }); renumberTeams(); commit();
+      };
+    });
+  });
+  var gen = $('#btn-gen', root);
+  if (gen) gen.onclick = function () {
+    if (S.bad.bracket && Object.keys(S.bad.results).length && !confirm('이미 입력된 경기 결과가 있습니다. 새로 생성하면 결과가 모두 지워집니다. 계속할까요?')) return;
+    var res = Bracket.generate(badTeamsForAlgo(), S.classes, badOpts());
+    if (!res.slots) { alert('대진표를 만들 수 없습니다:\n' + (res.errors || []).join('\n')); return; }
+    S.bad.bracket = { slots: res.slots, byeTeams: res.byeTeams, byeCount: res.byeCount, warnings: res.warnings, violations: res.violations, ok: res.ok, latin: res.latin, generatedAt: new Date().toLocaleString('ko-KR') };
+    S.bad.results = {}; S.bad.third = null; S.bad.undo = []; S.bad.redo = [];
+    commit();
+    if (!res.ok) alert('대진표를 만들었지만 경고가 있습니다. 화면의 경고를 확인하세요.');
+  };
+  var del = $('#btn-del-bracket', root);
+  if (del) del.onclick = function () { if (confirm('대진표와 경기 결과를 모두 지울까요?')) { S.bad.bracket = null; S.bad.results = {}; S.bad.third = null; S.bad.undo = []; S.bad.redo = []; commit(); } };
+  var u = $('#btn-undo', root); if (u) u.onclick = badUndo;
+  var rd = $('#btn-redo', root); if (rd) rd.onclick = badRedo;
+  var pb = $('#btn-print-bracket', root); if (pb) pb.onclick = function () { printSection('print-bracket'); };
+  var pg = $('#btn-png-bracket', root); if (pg) pg.onclick = exportBracketPng;
+  if (S.bad.bracket) {
+    var rounds2 = currentRounds();
+    $all('[data-open-match]', root).forEach(function (el) {
+      el.onclick = function (e) {
+        e.stopPropagation();
+        var p = el.dataset.openMatch.split('-'); var m = rounds2[num(p[0]) - 1][num(p[1])]; openMatchModal(m);
+      };
+    });
+    var th = $('[data-open-third]', root);
+    if (th) th.onclick = function () {
+      var info = thirdPlaceInfo(currentRounds()); if (!info) return;
+      var ta = teamById(info.a), tb = teamById(info.b);
+      openModal('<h2>3·4위전 — 승자 선택</h2><p class="hint">반 점수에는 영향이 없습니다 (두 조 모두 준결승 진출 점수 확정).</p>' +
+        '<button type="button" class="btn ok" data-w="a">✅ ' + esc(teamFull(ta)) + ' 승 (3위)</button><button type="button" class="btn ok" data-w="b">✅ ' + esc(teamFull(tb)) + ' 승 (3위)</button>' +
+        (info.winner ? '<button type="button" class="btn danger" data-clear>↩ 결과 취소</button>' : '') + '<button type="button" class="btn" data-close>닫기</button>');
+      var md = $('#modal');
+      $all('[data-w]', md).forEach(function (b) { b.onclick = function () { closeModal(); pushUndo(); S.bad.third = { winner: b.dataset.w === 'a' ? info.a : info.b, type: 'win' }; commit(); }; });
+      var c = $('[data-clear]', md); if (c) c.onclick = function () { closeModal(); pushUndo(); S.bad.third = null; commit(); };
+      $('[data-close]', md).onclick = closeModal;
+    };
+  }
+};
+
+
+/* ===================================================================
+   배구 리그전: 6경기 고정 순서, 점수 입력, 순위 결정(승자승·미니리그·추첨)
+   =================================================================== */
+var VOL_ORDER = [[0, 1], [2, 3], [0, 2], [1, 3], [0, 3], [1, 2]]; // 반 인덱스 쌍
+
+function volGameTeams(i) { return { a: CLASS_IDS[VOL_ORDER[i][0]], b: CLASS_IDS[VOL_ORDER[i][1]] }; }
+
+/* 순위 계산. 반환 {rows:[{classId, played,w,l,pf,pa,diff,rank,points,reason,needDraw}], done} */
+function volStandings() {
+  var st = {};
+  CLASS_IDS.forEach(function (c) { st[c] = { classId: c, played: 0, w: 0, l: 0, pf: 0, pa: 0, diff: 0 }; });
+  var played = [];
+  S.vol.games.forEach(function (g, i) {
+    if (!g) return;
+    var t = volGameTeams(i);
+    var sa = num(g.a), sb = num(g.b);
+    if (sa === sb) return;
+    played.push({ a: t.a, b: t.b, sa: sa, sb: sb });
+    st[t.a].played++; st[t.b].played++;
+    st[t.a].pf += sa; st[t.a].pa += sb; st[t.b].pf += sb; st[t.b].pa += sa;
+    if (sa > sb) { st[t.a].w++; st[t.b].l++; } else { st[t.b].w++; st[t.a].l++; }
+  });
+  CLASS_IDS.forEach(function (c) { st[c].diff = st[c].pf - st[c].pa; });
+
+  // 1차: 승수로 묶기
+  var groups = {};
+  CLASS_IDS.forEach(function (c) { (groups[st[c].w] = groups[st[c].w] || []).push(c); });
+  var winsDesc = Object.keys(groups).map(Number).sort(function (a, b) { return b - a; });
+  var ordered = [];
+  winsDesc.forEach(function (w) {
+    var g = groups[w];
+    if (g.length === 1) { ordered.push({ classId: g[0], reason: '승수', needDraw: false }); return; }
+    resolveTieGroup(g, played, st).forEach(function (x) { ordered.push(x); });
+  });
+  var done = S.vol.games.every(function (g) { return g && num(g.a) !== num(g.b); });
+  // 반영 점수는 6경기가 모두 끝나 순위가 확정된 뒤에만 종합 집계표에 들어간다
+  var rows = ordered.map(function (o, i) {
+    var s = st[o.classId];
+    return { classId: o.classId, played: s.played, w: s.w, l: s.l, pf: s.pf, pa: s.pa, diff: s.diff, rank: i + 1, provisional: S.settings.pts.vol[i] || 0, points: done ? (S.settings.pts.vol[i] || 0) : 0, reason: played.length ? o.reason : '', needDraw: done && o.needDraw };
+  });
+  return { rows: rows, done: done, playedCount: played.length };
+}
+
+/* 동률 그룹 해소. 2팀: 승자승 → 전체 득실차/총득점/총실점 → 추첨. 3팀 이상: 미니리그 → 전체 → 추첨 */
+function resolveTieGroup(group, played, st) {
+  var keyNames, keyOf;
+  if (group.length === 2) {
+    var h = played.filter(function (p) { return (p.a === group[0] && p.b === group[1]) || (p.a === group[1] && p.b === group[0]); })[0];
+    if (h) {
+      var winner = h.sa > h.sb ? h.a : h.b, loser = winner === h.a ? h.b : h.a;
+      return [{ classId: winner, reason: '승자승', needDraw: false }, { classId: loser, reason: '승자승', needDraw: false }];
+    }
+    keyNames = ['득실차', '총득점', '총실점(적은 순)'];
+    keyOf = function (c) { return [st[c].diff, st[c].pf, -st[c].pa]; };
+  } else {
+    // 미니리그: 동률 팀끼리 치른 경기만
+    var mini = {};
+    group.forEach(function (c) { mini[c] = { w: 0, pf: 0, pa: 0 }; });
+    played.forEach(function (p) {
+      if (group.indexOf(p.a) < 0 || group.indexOf(p.b) < 0) return;
+      mini[p.a].pf += p.sa; mini[p.a].pa += p.sb; mini[p.b].pf += p.sb; mini[p.b].pa += p.sa;
+      if (p.sa > p.sb) mini[p.a].w++; else mini[p.b].w++;
+    });
+    keyNames = ['미니리그 승수', '미니리그 득실차', '미니리그 총득점', '득실차', '총득점', '총실점(적은 순)'];
+    keyOf = function (c) { return [mini[c].w, mini[c].pf - mini[c].pa, mini[c].pf, st[c].diff, st[c].pf, -st[c].pa]; };
+  }
+  var manual = S.vol.manual || {};
+  var items = group.map(function (c) { return { classId: c, key: keyOf(c) }; });
+  items.sort(function (x, y) {
+    for (var i = 0; i < x.key.length; i++) if (x.key[i] !== y.key[i]) return y.key[i] - x.key[i];
+    var mx = manual[x.classId], my = manual[y.classId];
+    if (mx !== undefined && my !== undefined) return mx - my;
+    if (mx !== undefined) return -1; if (my !== undefined) return 1;
+    return 0;
+  });
+  // 사유: 위·아래 이웃 팀과 갈린 기준 중 더 깊은 것
+  return items.map(function (it, i) {
+    var level = -1, draw = false;
+    [items[i - 1], items[i + 1]].forEach(function (other) {
+      if (!other) return;
+      var lv = -1;
+      for (var k = 0; k < it.key.length; k++) if (it.key[k] !== other.key[k]) { lv = k; break; }
+      if (lv < 0) {
+        lv = it.key.length;
+        if (manual[it.classId] === undefined || manual[other.classId] === undefined) draw = true;
+      }
+      if (lv > level) level = lv;
+    });
+    var reason = level < 0 ? '' : (level < keyNames.length ? keyNames[level] : (draw ? '모든 기준 동일' : '추첨(수동 지정)'));
+    return { classId: it.classId, reason: (group.length >= 3 ? '3팀 이상 동률 → ' : '') + reason, needDraw: draw };
+  });
+}
+
+TAB_RENDERERS.vol = function (root) {
+  var stnd = volStandings();
+  var html = '<div class="card no-print"><h2>배구 리그전 — 점수 입력</h2>' +
+    '<p class="hint">15점 랠리포인트 단판 (14:14면 2점 차, 17점 캡). 양 팀 점수를 숫자로 입력하면 승자가 자동 판정됩니다. 동점은 저장되지 않습니다.</p>' +
+    '<div class="table-wrap"><table><tr><th>경기</th><th>대진</th><th>점수</th><th>결과</th><th>몰수</th></tr>' +
+    S.vol.games.map(function (g, i) {
+      var t = volGameTeams(i);
+      var res = '';
+      if (g && num(g.a) !== num(g.b)) res = (num(g.a) > num(g.b) ? badge(t.a) : badge(t.b)) + ' 승' + (g.forfeit ? ' <span class="tag">몰수</span>' : '');
+      return '<tr><td><b>' + (i + 1) + '경기</b></td><td class="left">' + badge(t.a) + ' : ' + badge(t.b) + '</td>' +
+        '<td><div class="row" style="justify-content:center;flex-wrap:nowrap"><input type="number" inputmode="numeric" min="0" data-vol="' + i + ':a" value="' + (g ? esc(g.a) : '') + '" style="max-width:80px"> : <input type="number" inputmode="numeric" min="0" data-vol="' + i + ':b" value="' + (g ? esc(g.b) : '') + '" style="max-width:80px"></div></td>' +
+        '<td>' + res + '</td><td><div class="row" style="justify-content:center"><button type="button" class="btn sm warn" data-vol-forfeit="' + i + ':a">' + esc(classById(t.a).name) + ' 몰수 (0:15)</button><button type="button" class="btn sm warn" data-vol-forfeit="' + i + ':b">' + esc(classById(t.b).name) + ' 몰수 (15:0)</button>' + (g ? '<button type="button" class="btn sm ghost" data-vol-clear="' + i + '">지우기</button>' : '') + '</div></td></tr>';
+    }).join('') + '</table></div></div>';
+
+  html += '<div class="card vol-card"><div class="row between"><h2>실시간 순위표 ' + (stnd.done ? '<span class="tag" style="background:var(--ok)">6경기 완료</span>' : '<span class="muted small">(' + stnd.playedCount + '/6경기)</span>') + '</h2>' +
+    '<div class="row no-print"><button type="button" class="btn" id="btn-print-vol">🖨 인쇄</button><button type="button" class="btn" id="btn-png-vol">🖼 PNG 저장</button></div></div>' +
+    '<h2 class="print-only">RAS 스포츠 축제 — 배구 리그전 순위표</h2>' +
+    '<div class="table-wrap"><table id="vol-table"><tr><th>순위</th><th>반</th><th>경기</th><th>승</th><th>패</th><th>득점</th><th>실점</th><th>득실차</th><th>순위 결정 기준</th><th>반영 점수' + (stnd.done ? '' : '<br><span class="small muted">(6경기 완료 시 확정)</span>') + '</th></tr>' +
+    stnd.rows.map(function (r) {
+      return '<tr class="rank' + r.rank + '"><td><b>' + r.rank + '위</b></td><td>' + badge(r.classId) + '</td><td>' + r.played + '</td><td>' + r.w + '</td><td>' + r.l + '</td><td>' + r.pf + '</td><td>' + r.pa + '</td><td>' + (r.diff > 0 ? '+' : '') + r.diff + '</td>' +
+        '<td class="small">' + esc(r.reason || '') + (r.needDraw ? ' <span class="tag">추첨 필요</span>' : '') + '</td><td>' + (stnd.done ? '<b>' + fmt(r.points) + '</b>' : '<span class="muted">(' + fmt(r.provisional) + ')</span>') + '</td></tr>';
+    }).join('') + '</table></div>' +
+    '<p class="hint">순위 규칙: ① 승수 → ② 2팀 동률이면 승자승 → ③ 3팀 이상 동률이면 동률 팀끼리의 미니리그(승수 → 득실차 → 총득점) → ④ 전체 득실차 → 총득점 → 총실점 적은 순 → ⑤ 추첨. 순위 확정 시 1위 ' + S.settings.pts.vol[0] + ' / 2위 ' + S.settings.pts.vol[1] + ' / 3위 ' + S.settings.pts.vol[2] + ' / 4위 ' + S.settings.pts.vol[3] + '점이 종합 집계표에 자동 반영됩니다.</p>';
+  if (stnd.rows.some(function (r) { return r.needDraw; }) || Object.keys(S.vol.manual || {}).length) {
+    html += '<div class="banner warn no-print">모든 기준이 같아 추첨이 필요한 팀이 있습니다. 추첨 결과대로 순서를 지정하세요 (숫자가 작을수록 상위).<div class="row" style="margin-top:8px">' +
+      CLASS_IDS.map(function (c) { return '<label class="inline">' + badge(c) + '<input type="number" inputmode="numeric" min="1" max="4" data-vol-manual="' + c + '" value="' + (S.vol.manual[c] !== undefined ? S.vol.manual[c] : '') + '" placeholder="-" style="max-width:70px"></label>'; }).join('') +
+      '<button type="button" class="btn sm" id="btn-vol-manual-clear">추첨 지정 지우기</button></div></div>';
+  }
+  html += '</div>';
+  root.innerHTML = html;
+
+  $all('[data-vol]', root).forEach(function (el) {
+    el.onchange = function () {
+      var p = el.dataset.vol.split(':'), i = num(p[0]), side = p[1];
+      var other = $('[data-vol="' + i + ':' + (side === 'a' ? 'b' : 'a') + '"]', root);
+      if (el.value === '' || other.value === '') return; // 둘 다 입력될 때까지 대기
+      var a = num($('[data-vol="' + i + ':a"]', root).value), b = num($('[data-vol="' + i + ':b"]', root).value);
+      if (a < 0 || b < 0) { alert('점수는 0 이상이어야 합니다.'); render(); return; }
+      if (a === b) { alert('동점은 저장할 수 없습니다. 배구는 단판이므로 반드시 승패가 가려져야 합니다.'); render(); return; }
+      S.vol.games[i] = { a: a, b: b, forfeit: null }; commit();
+    };
+  });
+  $all('[data-vol-forfeit]', root).forEach(function (el) {
+    el.onclick = function () {
+      var p = el.dataset.volForfeit.split(':'), i = num(p[0]); var t = volGameTeams(i);
+      var who = p[1] === 'a' ? t.a : t.b;
+      if (!confirm(classById(who).name + ' 반을 몰수패(0:15)로 처리할까요?')) return;
+      S.vol.games[i] = p[1] === 'a' ? { a: 0, b: 15, forfeit: 'a' } : { a: 15, b: 0, forfeit: 'b' }; commit();
+    };
+  });
+  $all('[data-vol-clear]', root).forEach(function (el) { el.onclick = function () { S.vol.games[num(el.dataset.volClear)] = null; commit(); }; });
+  $all('[data-vol-manual]', root).forEach(function (el) {
+    el.onchange = function () { if (el.value === '') delete S.vol.manual[el.dataset.volManual]; else S.vol.manual[el.dataset.volManual] = num(el.value); commit(); };
+  });
+  var mc = $('#btn-vol-manual-clear', root); if (mc) mc.onclick = function () { S.vol.manual = {}; commit(); };
+  $('#btn-print-vol', root).onclick = function () { printSection('print-vol'); };
+  $('#btn-png-vol', root).onclick = exportVolPng;
+};
+
+
+/* ===================================================================
+   레이저 사격 · 킨볼
+   =================================================================== */
+function laserRanking() {
+  var max = num(S.settings.laserMax, 10);
+  var rows = CLASS_IDS.map(function (c) {
+    var arr = (S.laser.scores[c] || []).slice(0, 7);
+    while (arr.length < 7) arr.push(null);
+    var vals = arr.map(function (v) { return v === null || v === '' ? 0 : num(v); });
+    var sum = vals.reduce(function (a, b) { return a + b; }, 0);
+    var sorted = vals.slice().sort(function (a, b) { return b - a; });
+    var incomplete = arr.some(function (v) { return v === null || v === ''; });
+    var invalid = vals.some(function (v) { return v < 0 || v > max; });
+    return { classId: c, vals: vals, sum: sum, best: sorted[0], sorted: sorted, incomplete: incomplete, invalid: invalid };
+  });
+  var manual = S.laser.manual || {};
+  rows.sort(function (x, y) {
+    if (x.sum !== y.sum) return y.sum - x.sum;
+    if (x.best !== y.best) return y.best - x.best;
+    for (var i = 0; i < 7; i++) if (x.sorted[i] !== y.sorted[i]) return y.sorted[i] - x.sorted[i];
+    var mx = manual[x.classId], my = manual[y.classId];
+    if (mx !== undefined && my !== undefined) return mx - my;
+    if (mx !== undefined) return -1; if (my !== undefined) return 1;
+    return 0;
+  });
+  // 4개 반 모두 점수가 하나라도 입력된 뒤에야 종합 집계표에 반영한다 (아무것도 없는 반이 순위 점수를 받지 않도록)
+  var active = rows.every(function (r) { return r.vals.some(function (v, i) { var raw = (S.laser.scores[r.classId] || [])[i]; return raw !== null && raw !== undefined && raw !== ''; }); });
+  rows.forEach(function (r, i) {
+    r.rank = i + 1; r.provisional = S.settings.pts.laser[i] || 0; r.points = active ? r.provisional : 0; r.active = active;
+    r.reason = ''; r.needDraw = false;
+    if (!active) return;
+    // 위·아래 이웃 중 더 깊은 기준까지 가야 갈리는 쪽을 사유로 표시
+    var level = -1, draw = false, manualDraw = false;
+    [rows[i - 1], rows[i + 1]].forEach(function (o) {
+      if (!o) return;
+      var lv;
+      if (r.sum !== o.sum) lv = 0;
+      else if (r.best !== o.best) lv = 1;
+      else if (r.sorted.join() !== o.sorted.join()) lv = 2;
+      else { lv = 3; if (manual[r.classId] !== undefined && manual[o.classId] !== undefined) manualDraw = true; else draw = true; }
+      if (lv > level) level = lv;
+    });
+    r.reason = ['합산', '최고 사로 점수', '내림차순 순차 비교', draw ? '모든 기준 동일' : '추첨(수동 지정)'][level] || '';
+    r.needDraw = draw;
+  });
+  return rows;
+}
+
+TAB_RENDERERS.laser = function (root) {
+  var max = num(S.settings.laserMax, 10);
+  var rows = laserRanking();
+  var byId = {}; rows.forEach(function (r) { byId[r.classId] = r; });
+  var html = '<div class="card"><h2>레이저 사격 — 반별 7명 (1~7번 사로)</h2>' +
+    '<p class="hint">사로별 만점 ' + max + '점 (설정에서 변경). 사격은 축제 일정과 별도로 체육 수업 시간에 진행하므로 언제든 입력·수정할 수 있습니다. 미입력 칸은 0점으로 계산하되 "입력 미완료"로 표시합니다.</p>' +
+    '<div class="table-wrap"><table><tr><th>반</th>' + [1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<th>' + i + '사로</th>'; }).join('') + '<th>합계</th><th>상태</th></tr>' +
+    CLASS_IDS.map(function (c) {
+      var r = byId[c]; var arr = S.laser.scores[c] || [];
+      return '<tr><td>' + badge(c) + '</td>' + [0, 1, 2, 3, 4, 5, 6].map(function (i) {
+        var v = arr[i]; var bad = v !== null && v !== undefined && v !== '' && (num(v) < 0 || num(v) > max);
+        return '<td><input type="number" inputmode="numeric" min="0" max="' + max + '" data-laser="' + c + ':' + i + '" value="' + (v === null || v === undefined ? '' : esc(v)) + '" style="' + (bad ? 'border-color:var(--danger);background:var(--danger-soft)' : '') + '"></td>';
+      }).join('') + '<td><b>' + r.sum + '</b></td><td class="small">' + (r.invalid ? '<span class="tag" style="background:var(--danger)">범위 오류</span>' : '') + (r.incomplete ? '<span class="tag">입력 미완료</span>' : '<span style="color:var(--ok)">완료</span>') + '</td></tr>';
+    }).join('') + '</table></div></div>' +
+    '<div class="card"><h2>순위</h2>' + (rows[0].active ? '' : '<p class="banner info">4개 반 모두 점수가 하나 이상 입력되면 순위 점수가 종합 집계표에 반영됩니다. (지금은 미반영)</p>') +
+    '<div class="table-wrap"><table><tr><th>순위</th><th>반</th><th>합계</th><th>최고 사로</th><th>순위 결정 기준</th><th>반영 점수</th></tr>' +
+    rows.map(function (r) { return '<tr class="rank' + r.rank + '"><td><b>' + r.rank + '위</b></td><td>' + badge(r.classId) + '</td><td>' + r.sum + '</td><td>' + r.best + '</td><td class="small">' + esc(r.reason) + (r.needDraw ? ' <span class="tag">추첨 필요</span>' : '') + '</td><td>' + (r.active ? '<b>' + fmt(r.points) + '</b>' : '<span class="muted">(' + fmt(r.provisional) + ')</span>') + '</td></tr>'; }).join('') + '</table></div>' +
+    '<p class="hint">동점 처리: ① 합산 → ② 최고 사로 점수 → ③ 점수를 내림차순으로 정렬해 순차 비교 → ④ 추첨(수동 지정). 1위 ' + S.settings.pts.laser.join(' / ') + '점 순으로 종합 집계표에 자동 반영됩니다.</p>' +
+    (rows.some(function (r) { return r.needDraw; }) || Object.keys(S.laser.manual || {}).length ? '<div class="banner warn">추첨이 필요한 반이 있습니다. 추첨 결과 순서를 지정하세요 (작을수록 상위).<div class="row" style="margin-top:8px">' +
+      CLASS_IDS.map(function (c) { return '<label class="inline">' + badge(c) + '<input type="number" inputmode="numeric" min="1" max="4" data-laser-manual="' + c + '" value="' + (S.laser.manual[c] !== undefined ? S.laser.manual[c] : '') + '" style="max-width:70px"></label>'; }).join('') +
+      '<button type="button" class="btn sm" id="btn-laser-manual-clear">지우기</button></div></div>' : '') + '</div>';
+  root.innerHTML = html;
+  $all('[data-laser]', root).forEach(function (el) {
+    el.onchange = function () {
+      var p = el.dataset.laser.split(':'); var c = p[0], i = num(p[1]);
+      if (!S.laser.scores[c]) S.laser.scores[c] = [null, null, null, null, null, null, null];
+      if (el.value === '') { S.laser.scores[c][i] = null; commit(); return; }
+      var v = num(el.value);
+      if (v < 0 || v > max) alert('점수는 0 이상 ' + max + '점 이하여야 합니다. (입력값 ' + v + ') 값은 저장되지만 빨간색으로 표시됩니다.');
+      S.laser.scores[c][i] = v; commit();
+    };
+  });
+  $all('[data-laser-manual]', root).forEach(function (el) { el.onchange = function () { if (el.value === '') delete S.laser.manual[el.dataset.laserManual]; else S.laser.manual[el.dataset.laserManual] = num(el.value); commit(); }; });
+  var mc = $('#btn-laser-manual-clear', root); if (mc) mc.onclick = function () { S.laser.manual = {}; commit(); };
+};
+
+/* ---------- 킨볼 ---------- */
+function kinPoints() {
+  var out = { rounds: [{}, {}, {}], total: {} };
+  CLASS_IDS.forEach(function (c) { out.total[c] = 0; });
+  S.kin.rounds.forEach(function (rd, ri) {
+    [1, 2, 3, 4].forEach(function (rank) {
+      var c = rd[rank]; if (!c) return;
+      var p = S.settings.pts.kin[rank - 1] || 0;
+      out.rounds[ri][c] = (out.rounds[ri][c] || 0) + p; out.total[c] += p;
+    });
+  });
+  return out;
+}
+function kinValidate(rd) {
+  var seen = {};
+  for (var r = 1; r <= 4; r++) { var c = rd[r]; if (!c) continue; if (seen[c]) return classById(c).name + ' 반이 두 순위에 중복 지정되었습니다.'; seen[c] = true; }
+  return null;
+}
+TAB_RENDERERS.kin = function (root) {
+  var kp = kinPoints();
+  var html = '<div class="card"><h2>킨볼 — 1·2·3조 순위 입력</h2>' +
+    '<div class="banner info">경기 규칙: 4개 반 동시 경기 → <b>10분 경과</b> 최저점 탈락(4위) → <b>12분 경과</b> 최저점 탈락(3위) → <b>14분 종료</b> 시 최고점 1위, 나머지 2위. 학급을 1·2·3조로 나눠 총 3번 진행하고 점수를 반별로 누적합니다 (반 최대 ' + (S.settings.pts.kin[0] * 3) + '점).</div>' +
+    '<div class="grid2">' + S.kin.rounds.map(function (rd, ri) {
+      var picked = [1, 2, 3, 4].map(function (r) { return rd[r]; }).filter(Boolean);
+      var next = picked.length + 1;
+      return '<div class="card tight"><h3 style="margin-top:0">' + (ri + 1) + '조 경기</h3>' +
+        '<p class="hint">순위대로(1위부터) 반을 누르세요. 한 반을 두 순위에 넣을 수 없습니다.</p>' +
+        '<div class="pick-area">' + CLASS_IDS.map(function (c) {
+          var used = picked.indexOf(c) >= 0;
+          return '<button type="button" class="btn" data-kin-pick="' + ri + ':' + c + '" ' + (used || next > 4 ? 'disabled' : '') + ' style="border-color:' + esc(classById(c).color) + '">' + badge(c) + (used ? ' ' + (picked.indexOf(c) + 1) + '위' : '') + '</button>';
+        }).join('') + '</div>' +
+        '<div class="table-wrap" style="margin-top:8px"><table><tr><th>순위</th><th>반</th><th>점수</th></tr>' + [1, 2, 3, 4].map(function (r) {
+          return '<tr><td><b>' + r + '위</b></td><td>' + (rd[r] ? badge(rd[r]) : '<span class="muted">' + (next === r ? '← 다음 선택' : '-') + '</span>') + '</td><td>' + (rd[r] ? S.settings.pts.kin[r - 1] : '') + '</td></tr>';
+        }).join('') + '</table></div>' +
+        '<div class="row" style="margin-top:8px"><button type="button" class="btn sm" data-kin-undo="' + ri + '" ' + (picked.length ? '' : 'disabled') + '>마지막 선택 취소</button><button type="button" class="btn sm danger" data-kin-reset="' + ri + '" ' + (picked.length ? '' : 'disabled') + '>이 조 초기화</button></div></div>';
+    }).join('') + '</div></div>' +
+    '<div class="card"><h2>킨볼 반별 누적 점수</h2><div class="table-wrap"><table><tr><th>반</th><th>1조</th><th>2조</th><th>3조</th><th>합계</th></tr>' +
+    CLASS_IDS.map(function (c) { return '<tr><td>' + badge(c) + '</td>' + [0, 1, 2].map(function (i) { return '<td>' + (kp.rounds[i][c] || 0) + '</td>'; }).join('') + '<td><b>' + fmt(kp.total[c]) + '</b></td></tr>'; }).join('') + '</table></div></div>';
+  root.innerHTML = html;
+  $all('[data-kin-pick]', root).forEach(function (el) {
+    el.onclick = function () {
+      var p = el.dataset.kinPick.split(':'), ri = num(p[0]), c = p[1]; var rd = S.kin.rounds[ri];
+      var next = 1; while (rd[next] && next <= 4) next++;
+      if (next > 4) return;
+      var trial = Object.assign({}, rd); trial[next] = c;
+      var err = kinValidate(trial); if (err) { alert(err + ' 저장하지 않습니다.'); return; }
+      rd[next] = c; commit();
+    };
+  });
+  $all('[data-kin-undo]', root).forEach(function (el) { el.onclick = function () { var rd = S.kin.rounds[num(el.dataset.kinUndo)]; for (var r = 4; r >= 1; r--) if (rd[r]) { delete rd[r]; break; } commit(); }; });
+  $all('[data-kin-reset]', root).forEach(function (el) { el.onclick = function () { if (confirm('이 조의 순위를 지울까요?')) { S.kin.rounds[num(el.dataset.kinReset)] = {}; commit(); } }; });
+};
+
+
+/* ===================================================================
+   종합 집계표 + 전광판
+   =================================================================== */
+var OVERALL_COLS = [['bad', '배드민턴'], ['kin1', '킨볼 1조'], ['kin2', '킨볼 2조'], ['kin3', '킨볼 3조'], ['vol', '배구'], ['laser', '레이저 사격']];
+var TB_NAMES = { bad: '배드민턴', vol: '배구', kin: '킨볼', laser: '레이저 사격', cheer: '응원·질서' };
+
+function autoValues() {
+  var bad = badClassPoints().total;
+  var kin = kinPoints();
+  var vol = {}; volStandings().rows.forEach(function (r) { vol[r.classId] = r.points; });
+  var laser = {}; laserRanking().forEach(function (r) { laser[r.classId] = r.points; });
+  var out = {};
+  CLASS_IDS.forEach(function (c) {
+    out[c] = { bad: bad[c] || 0, kin1: kin.rounds[0][c] || 0, kin2: kin.rounds[1][c] || 0, kin3: kin.rounds[2][c] || 0, vol: vol[c] || 0, laser: laser[c] || 0 };
+  });
+  return out;
+}
+function computeOverall() {
+  var auto = autoValues();
+  var ov = S.overall;
+  var rows = CLASS_IDS.map(function (c) {
+    var vals = {}, modified = {};
+    OVERALL_COLS.forEach(function (col) {
+      var k = col[0];
+      var o = ov.overrides[c] && ov.overrides[c][k];
+      if (o !== undefined && o !== null) { vals[k] = num(o); modified[k] = true; } else vals[k] = auto[c][k];
+    });
+    var cheer = num(ov.cheer[c]), extra = num(ov.extra[c]);
+    var sum = OVERALL_COLS.reduce(function (a, col) { return a + vals[col[0]]; }, 0) + cheer + extra;
+    return { classId: c, vals: vals, auto: auto[c], modified: modified, cheer: cheer, extra: extra, total: sum, reason: '', needDraw: false };
+  });
+  var tb = S.settings.tiebreak;
+  var keyOf = function (r) {
+    return [r.total].concat(tb.map(function (k) {
+      if (k === 'kin') return r.vals.kin1 + r.vals.kin2 + r.vals.kin3;
+      if (k === 'cheer') return r.cheer;
+      return r.vals[k];
+    }));
+  };
+  var manual = ov.manualRank || {};
+  rows.forEach(function (r) { r.key = keyOf(r); });
+  rows.sort(function (x, y) {
+    for (var i = 0; i < x.key.length; i++) if (x.key[i] !== y.key[i]) return y.key[i] - x.key[i];
+    var mx = manual[x.classId], my = manual[y.classId];
+    if (mx !== undefined && my !== undefined) return mx - my;
+    if (mx !== undefined) return -1; if (my !== undefined) return 1;
+    return 0;
+  });
+  rows.forEach(function (r, i) {
+    r.rank = i + 1;
+    var level = -1, draw = false;
+    [rows[i - 1], rows[i + 1]].forEach(function (o) {
+      if (!o || o.key[0] !== r.key[0]) return;
+      if (r.key.every(function (v) { return v === 0; }) && o.key.every(function (v) { return v === 0; })) return; // 아직 아무 점수도 없음
+      var lv = -1;
+      for (var k = 1; k < r.key.length; k++) if (r.key[k] !== o.key[k]) { lv = k; break; }
+      if (lv < 0) { lv = r.key.length; if (manual[r.classId] === undefined || manual[o.classId] === undefined) draw = true; }
+      if (lv > level) level = lv;
+    });
+    if (level >= 1 && level < r.key.length) r.reason = '동점 → ' + TB_NAMES[tb[level - 1]] + ' 점수';
+    else if (level >= r.key.length) { r.reason = draw ? '동점 → 모든 기준 동일' : '동점 → 추첨(수동)'; r.needDraw = draw; }
+  });
+  return { rows: rows };
+}
+function festivalStatusText() {
+  var parts = [badStatus().text];
+  var v = volStandings(); parts.push('배구 ' + (v.done ? '완료' : v.playedCount + '/6경기'));
+  var kinDone = S.kin.rounds.filter(function (rd) { return rd[1] && rd[2] && rd[3] && rd[4]; }).length; parts.push('킨볼 ' + kinDone + '/3조');
+  var lz = laserRanking(); parts.push('사격 ' + (lz.some(function (r) { return r.incomplete; }) ? '입력 중' : '완료'));
+  return parts.join(' · ');
+}
+
+var prevTotals = {};
+TAB_RENDERERS.overall = function (root) {
+  var ov = computeOverall();
+  var html = '<div class="card overall-card"><div class="row between no-print"><h2>종합 점수 집계표</h2><div class="row">' +
+    '<button type="button" class="btn primary" id="btn-sb-open">📺 전광판 모드</button><button type="button" class="btn" id="btn-print-overall">🖨 인쇄</button><button type="button" class="btn" id="btn-png-overall">🖼 PNG 저장</button></div></div>' +
+    '<h2 class="print-only">RAS로 성장하는 스포츠 축제 — 종합 점수 집계표</h2>' +
+    '<p class="hint no-print">배드민턴·배구·레이저 사격은 각 모듈에서 자동 연동, 킨볼은 순위 선택 → 자동 환산, 응원·질서와 기타 가감점은 직접 입력합니다. 자동 칸은 ✎를 눌러 수동 보정할 수 있고, 보정된 칸은 "수정됨"으로 표시되며 자동값으로 되돌릴 수 있습니다.</p>' +
+    '<div class="table-wrap"><table id="overall-table"><tr><th>순위</th><th>반</th>' + OVERALL_COLS.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '<th>응원·질서<br><span class="small muted">(수기)</span></th><th>기타 가감점<br><span class="small muted">(수기)</span></th><th>총점</th><th class="no-print">비고</th></tr>' +
+    ov.rows.map(function (r) {
+      var changed = prevTotals[r.classId] !== undefined && prevTotals[r.classId] !== r.total;
+      return '<tr class="rank' + r.rank + (changed ? ' hl' : '') + '" data-row="' + r.classId + '"><td><b style="font-size:1.2em">' + r.rank + '위</b></td><td>' + badge(r.classId, 'lg') + '</td>' +
+        OVERALL_COLS.map(function (col) {
+          var k = col[0]; var mod = r.modified[k];
+          return '<td class="' + (mod ? 'modified' : '') + '"><div class="row" style="justify-content:center;gap:4px"><b>' + fmt(r.vals[k]) + '</b>' +
+            (mod ? '<span class="tag">수정됨</span><button type="button" class="btn sm ghost no-print" title="자동값(' + r.auto[k] + ')으로 되돌리기" data-ov-reset="' + r.classId + ':' + k + '">↺ 자동값 ' + r.auto[k] + '</button>' : '<button type="button" class="btn sm ghost no-print" title="수동 보정" data-ov-edit="' + r.classId + ':' + k + '">✎</button>') + '</div></td>';
+        }).join('') +
+        '<td><input type="number" inputmode="numeric" data-cheer="' + r.classId + '" value="' + r.cheer + '" style="max-width:90px"></td>' +
+        '<td><input type="number" inputmode="numeric" data-extra="' + r.classId + '" value="' + r.extra + '" style="max-width:90px"></td>' +
+        '<td><b style="font-size:1.3em">' + fmt(r.total) + '</b></td><td class="small no-print">' + esc(r.reason) + (r.needDraw ? ' <span class="tag">추첨 필요</span>' : '') + '</td></tr>';
+    }).join('') + '</table></div>' +
+    '<p class="hint">동점 처리 순서: ' + S.settings.tiebreak.map(function (k, i) { return (i + 1) + '. ' + TB_NAMES[k]; }).join(' → ') + ' (설정에서 변경)</p>' +
+    (ov.rows.some(function (r) { return r.needDraw; }) || Object.keys(S.overall.manualRank || {}).length ? '<div class="banner warn no-print">모든 기준이 같은 반이 있어 추첨이 필요합니다. 추첨 결과 순서를 지정하세요 (작을수록 상위).<div class="row" style="margin-top:8px">' +
+      CLASS_IDS.map(function (c) { return '<label class="inline">' + badge(c) + '<input type="number" inputmode="numeric" min="1" max="4" data-ov-manual="' + c + '" value="' + (S.overall.manualRank[c] !== undefined ? S.overall.manualRank[c] : '') + '" style="max-width:70px"></label>'; }).join('') +
+      '<button type="button" class="btn sm" id="btn-ov-manual-clear">지우기</button></div></div>' : '') +
+    '<h3>🏆 시상 안내</h3><div class="table-wrap"><table style="max-width:700px"><tr><th>순위</th><th>반</th><th>시상</th></tr>' +
+    ov.rows.map(function (r) { var prize = ['상품권 120,000원', '상품권 90,000원', '상품권 60,000원', '러키드로우 · 참가상으로 보전'][r.rank - 1]; return '<tr class="rank' + r.rank + '"><td><b>' + r.rank + '위</b></td><td>' + badge(r.classId) + '</td><td>' + prize + '</td></tr>'; }).join('') + '</table></div></div>';
+  root.innerHTML = html;
+  prevTotals = {}; ov.rows.forEach(function (r) { prevTotals[r.classId] = r.total; });
+
+  $('#btn-sb-open', root).onclick = openScoreboard;
+  $('#btn-print-overall', root).onclick = function () { printSection('print-overall'); };
+  $('#btn-png-overall', root).onclick = exportOverallPng;
+  $all('[data-ov-edit]', root).forEach(function (el) {
+    el.onclick = function () {
+      var p = el.dataset.ovEdit.split(':'); var c = p[0], k = p[1];
+      var auto = autoValues()[c][k];
+      var colName = OVERALL_COLS.filter(function (x) { return x[0] === k; })[0][1];
+      openModal('<h2>수동 보정 — ' + badge(c) + ' ' + colName + '</h2><p class="hint">자동 계산값: <b>' + auto + '</b>. 현장 규칙 예외가 생겼을 때 이 칸의 값을 직접 지정합니다.</p>' +
+        '<label class="field">새 값<input type="number" inputmode="numeric" id="ov-new-val" value="' + auto + '"></label>' +
+        '<button type="button" class="btn primary" id="ov-save">저장</button><button type="button" class="btn" id="ov-cancel">취소</button>');
+      $('#ov-save').onclick = function () {
+        var v = num($('#ov-new-val').value);
+        if (!S.overall.overrides[c]) S.overall.overrides[c] = {};
+        S.overall.overrides[c][k] = v; closeModal(); commit();
+      };
+      $('#ov-cancel').onclick = closeModal;
+      $('#ov-new-val').focus();
+    };
+  });
+  $all('[data-ov-reset]', root).forEach(function (el) {
+    el.onclick = function () { var p = el.dataset.ovReset.split(':'); if (S.overall.overrides[p[0]]) delete S.overall.overrides[p[0]][p[1]]; commit(); };
+  });
+  $all('[data-cheer]', root).forEach(function (el) { el.onchange = function () { S.overall.cheer[el.dataset.cheer] = num(el.value); commit(); }; });
+  $all('[data-extra]', root).forEach(function (el) { el.onchange = function () { S.overall.extra[el.dataset.extra] = num(el.value); commit(); }; });
+  $all('[data-ov-manual]', root).forEach(function (el) { el.onchange = function () { if (el.value === '') delete S.overall.manualRank[el.dataset.ovManual]; else S.overall.manualRank[el.dataset.ovManual] = num(el.value); commit(); }; });
+  var mc = $('#btn-ov-manual-clear', root); if (mc) mc.onclick = function () { S.overall.manualRank = {}; commit(); };
+};
+
+/* ---------- 전광판 ---------- */
+var sbPrev = {};
+function openScoreboard() {
+  $('#scoreboard').classList.add('on');
+  sbPrev = {};
+  renderScoreboard();
+  try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); } catch (e) {}
+}
+function closeScoreboard() {
+  $('#scoreboard').classList.remove('on');
+  try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {}); } catch (e) {}
+}
+function renderScoreboard() {
+  var sb = $('#scoreboard'); if (!sb.classList.contains('on')) return;
+  var ov = computeOverall();
+  var max = Math.max.apply(null, ov.rows.map(function (r) { return Math.abs(r.total); }).concat([1]));
+  $('#sb-status').textContent = festivalStatusText();
+  $('#sb-rows').innerHTML = ov.rows.map(function (r) {
+    var c = classById(r.classId);
+    var changed = sbPrev[r.classId] !== undefined && sbPrev[r.classId] !== r.total;
+    var w = Math.max(2, Math.abs(r.total) / max * 100);
+    return '<div class="sb-row' + (changed ? ' hl' : '') + '"><div>' + r.rank + '위</div><div style="color:' + esc(c.color) + '">' + esc(c.name) + '</div><div class="bar" style="width:' + w + '%;background:' + esc(c.color) + '"></div><div style="text-align:right">' + fmt(r.total) + '점</div></div>';
+  }).join('');
+  ov.rows.forEach(function (r) { sbPrev[r.classId] = r.total; });
+}
+
+
+/* ===================================================================
+   경품 추첨: 반별 균등, 당첨자 영구 제외, 취소, CSV
+   =================================================================== */
+function lotteryPools() {
+  var winners = S.lottery.winners;
+  var isWon = function (c, s) { return winners.some(function (w) { return w.classId === c && w.no === s.no && w.name === s.name; }); };
+  var pools = {}, wonCount = {};
+  CLASS_IDS.forEach(function (c) {
+    pools[c] = (S.roster[c] || []).filter(function (s) { return !isWon(c, s); });
+    wonCount[c] = winners.filter(function (w) { return w.classId === c; }).length;
+  });
+  return { pools: pools, wonCount: wonCount };
+}
+/* 한 명 뽑기: 남은 인원이 있는 반 중 당첨자 수가 가장 적은 반들의 학생 전체에서 균등 무작위 */
+function pickOne() {
+  var lp = lotteryPools();
+  var cands = CLASS_IDS.filter(function (c) { return lp.pools[c].length > 0; });
+  if (!cands.length) return null;
+  var minW = Math.min.apply(null, cands.map(function (c) { return lp.wonCount[c]; }));
+  var cls = cands.filter(function (c) { return lp.wonCount[c] === minW; });
+  var all = [];
+  cls.forEach(function (c) { lp.pools[c].forEach(function (s) { all.push({ classId: c, no: s.no, name: s.name }); }); });
+  return all[Math.floor(Math.random() * all.length)];
+}
+var lotteryBusy = false;
+TAB_RENDERERS.lottery = function (root) {
+  var lp = lotteryPools();
+  var totalLeft = CLASS_IDS.reduce(function (a, c) { return a + lp.pools[c].length; }, 0);
+  var emptyClasses = CLASS_IDS.filter(function (c) { return lp.pools[c].length === 0 && (S.roster[c] || []).length > 0; });
+  var html = '<div class="card"><h2>경품 추첨 (러키드로우)</h2>' +
+    '<p class="hint">설정 탭의 학생 명단에서 뽑습니다. 뽑힌 학생은 이후 추첨에서 영구 제외되며, 반별 당첨자 수가 가장 적은 반에서만 뽑아 반별 차이가 항상 1 이내로 유지됩니다.</p>' +
+    '<div class="lottery-stage" id="lottery-stage"><div class="muted">남은 인원 ' + totalLeft + '명</div><div class="big" id="lottery-big">추첨 버튼을 누르세요</div><div id="lottery-sub"></div></div>' +
+    '<div class="row" style="margin-top:12px;justify-content:center"><span>한 번에</span><select id="lottery-count" style="width:auto"><option value="1">1명</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명</option></select>' +
+    '<button type="button" class="btn big primary" id="btn-draw" ' + (totalLeft ? '' : 'disabled') + '>🎁 추첨!</button></div>' +
+    (emptyClasses.length ? '<div class="banner warn" style="margin-top:10px">' + emptyClasses.map(function (c) { return classById(c).name; }).join(', ') + ' 반은 남은 인원이 0명이라 후보에서 제외됩니다. 이 경우에만 반별 당첨자 수 차이가 1을 넘을 수 있습니다.</div>' : '') +
+    '<div class="row" style="margin-top:10px">' + CLASS_IDS.map(function (c) { return '<span class="chip" style="border:3px solid ' + esc(classById(c).color) + ';border-radius:999px;padding:6px 12px">' + esc(classById(c).name) + ' 당첨 <b>' + lp.wonCount[c] + '</b>명 / 남은 ' + lp.pools[c].length + '명</span>'; }).join('') + '</div></div>' +
+    '<div class="card"><div class="row between"><h2>당첨자 명단 (' + S.lottery.winners.length + '명)</h2><button type="button" class="btn" id="btn-lottery-csv" ' + (S.lottery.winners.length ? '' : 'disabled') + '>⬇ CSV 내려받기</button></div>' +
+    '<div class="table-wrap"><table><tr><th>#</th><th>반</th><th>번호</th><th>이름</th><th>시각</th><th></th></tr>' +
+    S.lottery.winners.map(function (w, i) { return '<tr><td>' + (i + 1) + '</td><td>' + badge(w.classId) + '</td><td>' + w.no + '</td><td><b>' + esc(w.name) + '</b></td><td class="small">' + esc(w.at) + '</td><td><button type="button" class="btn sm danger" data-cancel-win="' + i + '">당첨 취소</button></td></tr>'; }).join('') +
+    (S.lottery.winners.length ? '' : '<tr><td colspan="6" class="muted">아직 당첨자가 없습니다</td></tr>') + '</table></div></div>';
+  root.innerHTML = html;
+  $('#btn-draw', root).onclick = function () {
+    if (lotteryBusy) return;
+    var n = num($('#lottery-count', root).value, 1);
+    runDraw(n, root);
+  };
+  $('#btn-lottery-csv', root).onclick = function () {
+    var lines = ['순번,반,번호,이름,시각'].concat(S.lottery.winners.map(function (w, i) { return [i + 1, classById(w.classId).name, w.no, w.name, w.at].join(','); }));
+    downloadText('경품추첨_당첨자_' + todayStr() + '.csv', lines.join('\n'), 'text/csv;charset=utf-8');
+  };
+  $all('[data-cancel-win]', root).forEach(function (b) {
+    b.onclick = function () { var w = S.lottery.winners[num(b.dataset.cancelWin)]; if (confirm(classById(w.classId).name + ' ' + w.no + '번 ' + w.name + ' 당첨을 취소하고 명단에 복귀시킬까요?')) { S.lottery.winners.splice(num(b.dataset.cancelWin), 1); commit(); } };
+  });
+};
+function runDraw(n, root) {
+  lotteryBusy = true;
+  var big = $('#lottery-big', root), sub = $('#lottery-sub', root), btn = $('#btn-draw', root);
+  btn.disabled = true;
+  var picked = [];
+  var step = function () {
+    if (picked.length >= n) { lotteryBusy = false; commit(); return; }
+    var w = pickOne();
+    if (!w) { lotteryBusy = false; commit(); return; }
+    // 슬롯 애니메이션: 무작위 이름을 빠르게 보여준 뒤 멈춤
+    var lp = lotteryPools(); var all = [];
+    CLASS_IDS.forEach(function (c) { lp.pools[c].forEach(function (s) { all.push({ classId: c, no: s.no, name: s.name }); }); });
+    var dur = n === 1 ? 2500 : 1500, t0 = Date.now();
+    big.classList.add('spin');
+    var iv = setInterval(function () {
+      var r = all[Math.floor(Math.random() * all.length)] || w;
+      big.innerHTML = badge(r.classId, 'lg') + ' ' + r.no + '번 ' + esc(r.name);
+      if (Date.now() - t0 >= dur) {
+        clearInterval(iv); big.classList.remove('spin');
+        big.innerHTML = '🎉 ' + badge(w.classId, 'lg') + ' <b>' + w.no + '번 ' + esc(w.name) + '</b>';
+        S.lottery.winners.push({ classId: w.classId, no: w.no, name: w.name, at: new Date().toLocaleTimeString('ko-KR') });
+        saveState();
+        picked.push(w);
+        sub.innerHTML = picked.map(function (p) { return badge(p.classId) + ' ' + p.no + '번 ' + esc(p.name); }).join(' · ');
+        beep(880, 0.15); setTimeout(function () { beep(1320, 0.25); }, 160);
+        setTimeout(step, 700);
+      }
+    }, 70);
+  };
+  step();
+}
+
+
+/* ===================================================================
+   타이머 (Web Audio 알림음) + 일정표
+   =================================================================== */
+var audioCtx = null;
+function beep(freq, dur, vol) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = freq || 880;
+    g.gain.value = vol || 0.25;
+    o.connect(g); g.connect(audioCtx.destination);
+    var t = audioCtx.currentTime; o.start(t); g.gain.setValueAtTime(vol || 0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t + (dur || 0.3)); o.stop(t + (dur || 0.3) + 0.05);
+  } catch (e) {}
+}
+function alarm() { [0, 250, 500, 750, 1000, 1250].forEach(function (d, i) { setTimeout(function () { beep(i % 2 ? 1200 : 900, 0.2, 0.35); }, d); }); }
+
+/* 타이머 객체: 메모리에서만 동작 (탭을 옮겨도 계속 진행) */
+var TIMERS = {};
+function makeTimer(id, totalSec, alerts) { return { id: id, total: totalSec, remain: totalSec, running: false, last: 0, ended: false, msg: '', alerts: alerts || [], fired: {} }; }
+function timerTotal(kind, court) {
+  var t = S.settings.timer;
+  if (kind === 'court') { var r = (TIMERS['court' + court] && TIMERS['court' + court].roundMode) || 'r1'; return Math.round((r === 'r1' ? t.r1 : t.later) * 60); }
+  if (kind === 'vol') return Math.round(t.vol * 60);
+  if (kind === 'kin') return Math.round(t.kin * 60);
+  return 60;
+}
+function ensureTimers() {
+  var courts = Math.max(1, num(S.settings.courts, 5));
+  for (var c = 1; c <= courts; c++) if (!TIMERS['court' + c]) { TIMERS['court' + c] = makeTimer('court' + c, timerTotal('court', c)); TIMERS['court' + c].roundMode = 'r1'; TIMERS['court' + c].endMsg = '시간 종료 — 현재 점수 우세 조 승, 동점이면 다음 1점 선취'; }
+  if (!TIMERS.vol) { TIMERS.vol = makeTimer('vol', timerTotal('vol')); TIMERS.vol.endMsg = '시간 종료'; }
+  if (!TIMERS.kin) {
+    TIMERS.kin = makeTimer('kin', timerTotal('kin'), [{ at: 600, msg: '10분 경과 — 최저점 반 탈락 (4위 확정)' }, { at: 720, msg: '12분 경과 — 최저점 반 탈락 (3위 확정)' }]);
+    TIMERS.kin.endMsg = '14분 종료 — 최고점 반 1위, 남은 반 2위 확정';
+  }
+}
+function timerStart(t) { if (t.ended) return; t.running = true; t.last = Date.now(); if (!audioCtx) beep(1, 0.01, 0.001); }
+function timerPause(t) { t.running = false; }
+function timerReset(t, total) { t.total = total !== undefined ? total : t.total; t.remain = t.total; t.running = false; t.ended = false; t.msg = ''; t.fired = {}; }
+function tickTimers() {
+  var now = Date.now();
+  Object.keys(TIMERS).forEach(function (k) {
+    var t = TIMERS[k];
+    if (!t.running) return;
+    var dt = (now - t.last) / 1000; t.last = now;
+    t.remain = Math.max(0, t.remain - dt);
+    var elapsed = t.total - t.remain;
+    t.alerts.forEach(function (a) { if (!t.fired[a.at] && elapsed >= a.at) { t.fired[a.at] = true; t.msg = a.msg; alarm(); } });
+    if (t.remain <= 0) { t.running = false; t.ended = true; t.msg = t.endMsg || '시간 종료'; alarm(); }
+  });
+  if (S.ui.tab === 'timer') updateTimerDom();
+}
+function fmtTime(sec) { sec = Math.ceil(sec); var m = Math.floor(sec / 60), s = sec % 60; return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); }
+function updateTimerDom() {
+  Object.keys(TIMERS).forEach(function (k) {
+    var t = TIMERS[k]; var el = document.getElementById('timer-' + k); if (!el) return;
+    el.classList.toggle('running', t.running); el.classList.toggle('ended', t.ended);
+    var tm = $('.time', el); if (tm && tm.textContent !== fmtTime(t.remain)) tm.textContent = fmtTime(t.remain);
+    var ms = $('.msg', el); if (ms && ms.textContent !== t.msg) ms.textContent = t.msg;
+    var sb = $('[data-t-start]', el); if (sb) sb.textContent = t.running ? '⏸ 일시정지' : (t.remain < t.total && !t.ended ? '▶ 계속' : '▶ 시작');
+  });
+}
+function timerCard(t, title, extra) {
+  return '<div class="timer" id="timer-' + t.id + '"><div style="font-weight:900">' + title + '</div>' + (extra || '') + '<div class="time">' + fmtTime(t.remain) + '</div><div class="msg">' + esc(t.msg) + '</div>' +
+    '<div class="row" style="justify-content:center;margin-top:6px"><button type="button" class="btn primary" data-t-start="' + t.id + '">▶ 시작</button><button type="button" class="btn" data-t-reset="' + t.id + '">↺ 초기화</button></div></div>';
+}
+TAB_RENDERERS.timer = function (root) {
+  ensureTimers();
+  var courts = Math.max(1, num(S.settings.courts, 5));
+  var html = '<div class="card"><h2>🏸 배드민턴 코트 타이머 (' + courts + '면 독립)</h2><p class="hint">1회전 ' + S.settings.timer.r1 + '분, 2회전 이후 ' + S.settings.timer.later + '분 (설정에서 변경). 종료 시 소리와 화면 점멸로 알립니다. 소리가 안 나면 화면을 한 번 터치한 뒤 다시 시작하세요.</p>' +
+    '<div class="row" style="margin-bottom:8px"><button type="button" class="btn ok" id="btn-courts-start-all">▶ 모든 코트 동시 시작</button><button type="button" class="btn" id="btn-courts-reset-all">↺ 모든 코트 초기화</button></div><div class="grid4">';
+  for (var c = 1; c <= courts; c++) {
+    var t = TIMERS['court' + c];
+    html += timerCard(t, c + '코트', '<div class="row" style="justify-content:center;margin:4px 0"><label class="inline small"><input type="radio" name="rm-' + c + '" value="r1" data-t-round="' + c + '" ' + (t.roundMode === 'r1' ? 'checked' : '') + '> 1회전 ' + S.settings.timer.r1 + '분</label><label class="inline small"><input type="radio" name="rm-' + c + '" value="later" data-t-round="' + c + '" ' + (t.roundMode === 'later' ? 'checked' : '') + '> 2회전 이후 ' + S.settings.timer.later + '분</label></div>');
+  }
+  html += '</div></div><div class="grid2"><div class="card"><h2>🏐 배구 타이머</h2><p class="hint">경기당 ' + S.settings.timer.vol + '분</p>' + timerCard(TIMERS.vol, '배구 경기') + '</div>' +
+    '<div class="card"><h2>⚽ 킨볼 타이머</h2><p class="hint">' + S.settings.timer.kin + '분 카운트다운. 10분(4위 확정)·12분(3위 확정)·14분(1·2위 확정) 시점에 자동 알림.</p>' + timerCard(TIMERS.kin, '킨볼 경기') + '</div></div>';
+  root.innerHTML = html;
+  $all('[data-t-start]', root).forEach(function (b) { b.onclick = function () { var t = TIMERS[b.dataset.tStart]; if (t.running) timerPause(t); else timerStart(t); updateTimerDom(); }; });
+  $all('[data-t-reset]', root).forEach(function (b) { b.onclick = function () { var t = TIMERS[b.dataset.tReset]; var k = t.id.indexOf('court') === 0 ? 'court' : t.id; timerReset(t, timerTotal(k, num(t.id.replace('court', '')))); updateTimerDom(); }; });
+  $all('[data-t-round]', root).forEach(function (r) { r.onchange = function () { var t = TIMERS['court' + r.dataset.tRound]; t.roundMode = r.value; timerReset(t, timerTotal('court', num(r.dataset.tRound))); updateTimerDom(); }; });
+  $('#btn-courts-start-all', root).onclick = function () { for (var c = 1; c <= courts; c++) timerStart(TIMERS['court' + c]); updateTimerDom(); };
+  $('#btn-courts-reset-all', root).onclick = function () { for (var c = 1; c <= courts; c++) timerReset(TIMERS['court' + c], timerTotal('court', c)); updateTimerDom(); };
+  updateTimerDom();
+};
+
+/* ---------- 일정표 (읽기 전용) ---------- */
+TAB_RENDERERS.schedule = function (root) {
+  var days = [
+    { title: '1일차 12.22.(화) — 배드민턴 64강·32강', items: [['개회식·준비운동', 15], ['64강(1회전)', 35], ['32강', 35], ['정리', 5]] },
+    { title: '2일차 12.23.(수) — 배드민턴 16강~결승', items: [['준비', 5], ['16강', 20], ['8강', 15], ['준결승', 15], ['3·4위전·결승', 15], ['시상·추첨', 20]] },
+    { title: '3일차 12.24.(목) — 배구 리그전', items: [['개회식', 10], ['1경기 3-1:3-2', 13], ['2경기 3-3:3-4', 13], ['3경기 3-1:3-3', 13], ['4경기 3-2:3-4', 13], ['5경기 3-1:3-4', 13], ['6경기 3-2:3-3', 13], ['순위 발표', 2]] },
+    { title: '4일차 12.29.(화) — 킨볼·통합 시상 (총 100분 = 90분 + 쉬는시간 10분)', items: [['개회식', 12], ['킨볼 1조', 19], ['킨볼 2조', 19], ['킨볼 3조', 19], ['집계', 6], ['통합 시상', 13], ['러키드로우', 9], ['폐회', 3]] }
+  ];
+  root.innerHTML = '<div class="card"><h2>📅 일자별 타임테이블 (참고용)</h2><p class="hint">1~2교시, 총 8차시. 레이저 사격은 별도 체육 수업 시간에 반별로 진행합니다.</p><div class="grid2">' +
+    days.map(function (d) {
+      var total = d.items.reduce(function (a, it) { return a + it[1]; }, 0);
+      return '<div class="card tight"><h3 style="margin-top:0">' + d.title + '</h3><table><tr><th>순서</th><th>내용</th><th>시간</th><th>누적</th></tr>' +
+        d.items.map(function (it, i, arr) { var acc = arr.slice(0, i + 1).reduce(function (a, x) { return a + x[1]; }, 0); return '<tr><td>' + (i + 1) + '</td><td class="left">' + it[0] + '</td><td>' + it[1] + '분</td><td>' + acc + '분</td></tr>'; }).join('') +
+        '<tr><th colspan="2">합계</th><th>' + total + '분</th><th></th></tr></table></div>';
+    }).join('') + '</div></div>';
+};
+
+
+/* ===================================================================
+   인쇄 · PNG 내보내기 (외부 라이브러리 없이 Canvas로 직접 그림)
+   =================================================================== */
+function printSection(cls) {
+  document.body.classList.add(cls);
+  var cleanup = function () { document.body.classList.remove(cls); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(function () { window.print(); setTimeout(cleanup, 2000); }, 50);
+}
+function canvasDownload(canvas, name) {
+  try {
+    canvas.toBlob(function (blob) {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }, 'image/png');
+  } catch (e) { alert('PNG 저장에 실패했습니다: ' + e.message); }
+}
+var CANVAS_FONT = "'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif";
+/* 표 그리기: headers[], rows[][] (셀은 문자열 또는 {text,color,bold}) */
+function drawTablePng(title, headers, rows, colWidths, filename) {
+  var scale = 2, rowH = 44, headH = 50, titleH = 70, pad = 30;
+  var width = colWidths.reduce(function (a, b) { return a + b; }, 0) + pad * 2;
+  var height = titleH + headH + rowH * rows.length + pad * 2;
+  var cv = document.createElement('canvas'); cv.width = width * scale; cv.height = height * scale;
+  var ctx = cv.getContext('2d'); ctx.scale(scale, scale);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#111'; ctx.font = '900 26px ' + CANVAS_FONT; ctx.textBaseline = 'middle';
+  ctx.fillText(title, pad, pad + 20);
+  ctx.font = '600 13px ' + CANVAS_FONT; ctx.fillStyle = '#555'; ctx.fillText(new Date().toLocaleString('ko-KR'), pad, pad + 50);
+  var y = pad + titleH;
+  var x = pad;
+  ctx.font = '900 16px ' + CANVAS_FONT; ctx.textAlign = 'center';
+  headers.forEach(function (h, i) { ctx.fillStyle = '#e5e7eb'; ctx.fillRect(x, y, colWidths[i], headH); ctx.strokeStyle = '#9ca3af'; ctx.strokeRect(x, y, colWidths[i], headH); ctx.fillStyle = '#111'; ctx.fillText(h, x + colWidths[i] / 2, y + headH / 2); x += colWidths[i]; });
+  y += headH;
+  rows.forEach(function (r) {
+    x = pad;
+    r.forEach(function (cell, i) {
+      var c = typeof cell === 'object' && cell !== null ? cell : { text: String(cell) };
+      ctx.fillStyle = c.bg || '#fff'; ctx.fillRect(x, y, colWidths[i], rowH); ctx.strokeStyle = '#9ca3af'; ctx.strokeRect(x, y, colWidths[i], rowH);
+      if (c.color) { ctx.fillStyle = c.color; ctx.fillRect(x + 6, y + 8, colWidths[i] - 12, rowH - 16); ctx.fillStyle = '#fff'; }
+      else ctx.fillStyle = '#111';
+      ctx.font = (c.bold ? '900 ' : '700 ') + (c.size || 16) + 'px ' + CANVAS_FONT;
+      ctx.fillText(c.text, x + colWidths[i] / 2, y + rowH / 2);
+      x += colWidths[i];
+    });
+    y += rowH;
+  });
+  canvasDownload(cv, filename);
+}
+function exportOverallPng() {
+  var ov = computeOverall();
+  var headers = ['순위', '반'].concat(OVERALL_COLS.map(function (c) { return c[1]; })).concat(['응원·질서', '기타 가감점', '총점']);
+  var rows = ov.rows.map(function (r) {
+    var c = classById(r.classId);
+    return [{ text: r.rank + '위', bold: true }, { text: c.name, color: c.color, bold: true }].concat(OVERALL_COLS.map(function (col) { return { text: fmt(r.vals[col[0]]) + (r.modified[col[0]] ? '*' : '') }; })).concat([{ text: fmt(r.cheer) }, { text: fmt(r.extra) }, { text: fmt(r.total), bold: true, size: 20 }]);
+  });
+  drawTablePng('RAS로 성장하는 스포츠 축제 — 종합 점수 집계표', headers, rows, [70, 90, 100, 90, 90, 90, 90, 110, 100, 110, 110], '종합집계표_' + todayStr() + '.png');
+}
+function exportVolPng() {
+  var st = volStandings();
+  var rows = st.rows.map(function (r) { var c = classById(r.classId); return [{ text: r.rank + '위', bold: true }, { text: c.name, color: c.color, bold: true }, r.played, r.w, r.l, r.pf, r.pa, (r.diff > 0 ? '+' : '') + r.diff, { text: r.reason || '', size: 12 }, { text: fmt(r.points), bold: true }]; });
+  drawTablePng('RAS 스포츠 축제 — 배구 리그전 순위표', ['순위', '반', '경기', '승', '패', '득점', '실점', '득실차', '순위 결정 기준', '반영 점수'], rows, [70, 90, 60, 60, 60, 70, 70, 80, 260, 100], '배구순위표_' + todayStr() + '.png');
+}
+function exportBracketPng() {
+  var rounds = currentRounds(); if (!rounds) return;
+  var scale = 2, colW = 230, gap = 40, unit = 58, boxH = 50, top = 90, left = 20;
+  var width = left * 2 + 7 * colW + 6 * gap;
+  var height = top + 32 * unit + 40;
+  var cv = document.createElement('canvas'); cv.width = width * scale; cv.height = height * scale;
+  var ctx = cv.getContext('2d'); ctx.scale(scale, scale);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, width, height);
+  ctx.fillStyle = '#111'; ctx.font = '900 24px ' + CANVAS_FONT; ctx.textBaseline = 'middle';
+  ctx.fillText('RAS 스포츠 축제 — 배드민턴 복식 대진표 (' + new Date().toLocaleDateString('ko-KR') + ')', left, 30);
+  var third = thirdPlaceInfo(rounds);
+  var sideText = function (id, m, x, y, w) {
+    if (id === 'BYE') { ctx.fillStyle = '#777'; ctx.font = 'italic 600 12px ' + CANVAS_FONT; ctx.fillText('부전승', x + 6, y); return; }
+    if (!id) { ctx.fillStyle = '#999'; ctx.font = '600 12px ' + CANVAS_FONT; ctx.fillText('(대기)', x + 6, y); return; }
+    var t = teamById(id); if (!t) return; var c = classById(t.classId);
+    if (m.winner === id) { ctx.fillStyle = '#d1fae5'; ctx.fillRect(x + 1, y - 11, w - 2, 22); }
+    ctx.fillStyle = c.color; ctx.fillRect(x + 4, y - 8, 34, 16); ctx.fillStyle = '#fff'; ctx.font = '900 10px ' + CANVAS_FONT; ctx.textAlign = 'center'; ctx.fillText(c.name, x + 21, y); ctx.textAlign = 'left';
+    ctx.fillStyle = m.winner && m.winner !== id ? '#888' : '#111'; ctx.font = '800 12px ' + CANVAS_FONT;
+    var label = t.num + '조' + (num(t.seed) ? ['', '①', '②', '③', '④'][num(t.seed)] : '') + ' ' + t.p1 + '·' + t.p2;
+    ctx.fillText(label.length > 16 ? label.slice(0, 16) + '…' : label, x + 42, y);
+    if (m.winner === id) { ctx.fillStyle = '#047857'; ctx.font = '900 11px ' + CANVAS_FONT; ctx.textAlign = 'right'; ctx.fillText(m.type === 'bye' ? '부전승' : m.type === 'forfeit' ? '몰수승' : '승', x + w - 4, y); ctx.textAlign = 'left'; }
+  };
+  var centerY = function (r, i) { return top + (i + 0.5) * unit * Math.pow(2, r); };
+  rounds.forEach(function (ms, r) {
+    var x = left + r * (colW + gap);
+    ctx.fillStyle = '#111'; ctx.font = '900 15px ' + CANVAS_FONT; ctx.textAlign = 'center'; ctx.fillText(Bracket.ROUND_NAMES[r], x + colW / 2, top - 20); ctx.textAlign = 'left';
+    ms.forEach(function (m, i) {
+      var cy = centerY(r, i);
+      ctx.strokeStyle = m.winner && m.type !== 'bye' ? '#047857' : '#9ca3af'; ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#fff'; ctx.fillRect(x, cy - boxH / 2, colW, boxH); ctx.strokeRect(x, cy - boxH / 2, colW, boxH);
+      ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x + colW, cy); ctx.stroke();
+      sideText(m.a, m, x, cy - boxH / 4, colW); sideText(m.b, m, x, cy + boxH / 4, colW);
+      if (r < 5) { // 다음 라운드 연결선
+        var ny = centerY(r + 1, Math.floor(i / 2)); var nx = x + colW + gap;
+        ctx.strokeStyle = '#9ca3af'; ctx.beginPath(); ctx.moveTo(x + colW, cy); ctx.lineTo(x + colW + gap / 2, cy); ctx.lineTo(x + colW + gap / 2, ny); ctx.lineTo(nx, ny); ctx.stroke();
+      }
+    });
+  });
+  // 3·4위전
+  var tx = left + 6 * (colW + gap), ty = centerY(5, 0) + 120;
+  ctx.fillStyle = '#111'; ctx.font = '900 15px ' + CANVAS_FONT; ctx.textAlign = 'center'; ctx.fillText('3·4위전 (반 점수 무관)', tx + colW / 2, ty - boxH / 2 - 14); ctx.textAlign = 'left';
+  ctx.strokeStyle = '#9ca3af'; ctx.strokeRect(tx, ty - boxH / 2, colW, boxH); ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + colW, ty); ctx.stroke();
+  if (third) { sideText(third.a, third, tx, ty - boxH / 4, colW); sideText(third.b, third, tx, ty + boxH / 4, colW); }
+  canvasDownload(cv, '배드민턴대진표_' + todayStr() + '.png');
+}
+
+
+/* ===================================================================
+   시작
+   =================================================================== */
+(function init() {
+  loadState();
+  applyFontSize();
+  $all('nav.tabs button').forEach(function (b) { b.onclick = function () { showTab(b.dataset.tab); }; });
+  $('#btn-scoreboard').onclick = openScoreboard;
+  $('#btn-scoreboard-close').onclick = closeScoreboard;
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); if ($('#scoreboard').classList.contains('on')) closeScoreboard(); } });
+  $('#modal-bg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeModal(); });
+  ensureTimers();
+  setInterval(tickTimers, 250);
+  // 상태가 바뀔 때마다 전광판도 갱신
+  var origRender = render;
+  render = function () { origRender(); renderScoreboard(); };
+  // 자동 저장 상태 확인 (사생활 보호 모드 등)
+  try { localStorage.setItem(STORAGE_KEY + '-test', '1'); localStorage.removeItem(STORAGE_KEY + '-test'); } catch (e) { storageOk = false; }
+  updateWarnBanner();
+  showTab(S.ui.tab || 'settings');
+  window.RAS = { S: function () { return S; }, Bracket: Bracket, verify: function (n) { return Bracket.verify(n || 1000, console.log); } };
+})();
+
+</script>
+</body>
+</html>
