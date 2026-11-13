@@ -413,7 +413,7 @@ tr.hl { animation: hl 1.7s ease-out; }
   </div>
   <div class="sb-status" id="sb-status"></div>
   <div class="sb-rows" id="sb-rows"></div>
-  <div class="sb-foot">시상: 1위 120,000원 · 2위 90,000원 · 3위 60,000원 상품권. 4위는 러키드로우와 참가상으로 보전</div>
+  <div class="sb-foot">시상: 1위 120,000원 · 2위 90,000원 · 3위 60,000원 상품권</div>
 </div>
 
 <div class="modal-bg" id="modal-bg"><div class="modal" id="modal"></div></div>
@@ -1118,7 +1118,6 @@ TAB_RENDERERS.settings = function (root) {
     '<label class="inline"><span style="min-width:9em">배드민턴 2회전 이후</span><input type="number" inputmode="numeric" data-timer="later" value="' + st.timer.later + '"></label>' +
     '<label class="inline"><span style="min-width:9em">배구 경기당</span><input type="number" inputmode="numeric" data-timer="vol" value="' + st.timer.vol + '"></label>' +
     '<label class="inline"><span style="min-width:9em">킨볼</span><input type="number" inputmode="numeric" data-timer="kin" value="' + st.timer.kin + '"></label>' +
-    '<h3>레이저 사격</h3><label class="inline"><span>사로별 만점</span><input type="number" inputmode="numeric" min="1" data-set-num="laserMax" value="' + st.laserMax + '">점</label>' +
     '</div>' +
 
     '<div class="card"><h2>4. 데이터 관리</h2>' +
@@ -1137,7 +1136,11 @@ TAB_RENDERERS.settings = function (root) {
 
     '<div class="card" id="roster-card"><h2>5. 학생 명단 (배드민턴 조 편성 · 경품 추첨 공용)</h2>' +
     '<p class="hint">반마다 <b>번호와 이름</b>을 입력합니다. 엑셀에서 두 열(번호, 이름)을 복사해 붙여넣기 하면 한 번에 들어갑니다. 한 줄에 한 명: <code>1[탭]김○○</code> / <code>1,김○○</code> / <code>1 김○○</code> 모두 됩니다.</p>' +
-    '<div class="grid4">' + S.classes.map(function (c) { return renderRosterCard(c); }).join('') + '</div></div>';
+    '<div class="grid4">' + S.classes.map(function (c) { return renderRosterCard(c); }).join('') + '</div></div>' +
+
+    '<div class="card"><h2>6. 경품 추첨 현황 (교사용)</h2>' +
+    '<p class="hint">반별 당첨자 수와 남은 인원입니다. 추첨 탭에는 띄우지 않으니 이곳에서만 확인하세요.</p>' +
+    lotteryStatusHtml() + '</div>';
 
   // --- 이벤트 ---
   $all('[data-class-name]', root).forEach(function (el) { el.onchange = function () { S.classes[num(el.dataset.className)].name = el.value.trim() || ('반' + (num(el.dataset.className) + 1)); commit(); }; });
@@ -1727,7 +1730,6 @@ TAB_RENDERERS.vol = function (root) {
    레이저 사격 · 킨볼
    =================================================================== */
 function laserRanking() {
-  var max = num(S.settings.laserMax, 10);
   var rows = CLASS_IDS.map(function (c) {
     var arr = (S.laser.scores[c] || []).slice(0, 7);
     while (arr.length < 7) arr.push(null);
@@ -1735,8 +1737,7 @@ function laserRanking() {
     var sum = vals.reduce(function (a, b) { return a + b; }, 0);
     var sorted = vals.slice().sort(function (a, b) { return b - a; });
     var incomplete = arr.some(function (v) { return v === null || v === ''; });
-    var invalid = vals.some(function (v) { return v < 0 || v > max; });
-    return { classId: c, vals: vals, sum: sum, best: sorted[0], sorted: sorted, incomplete: incomplete, invalid: invalid };
+    return { classId: c, vals: vals, sum: sum, best: sorted[0], sorted: sorted, incomplete: incomplete };
   });
   var manual = S.laser.manual || {};
   rows.sort(function (x, y) {
@@ -1772,18 +1773,17 @@ function laserRanking() {
 }
 
 TAB_RENDERERS.laser = function (root) {
-  var max = num(S.settings.laserMax, 10);
   var rows = laserRanking();
   var byId = {}; rows.forEach(function (r) { byId[r.classId] = r; });
   var html = '<div class="card"><h2>레이저 사격 · 반별 7명 (1~7번 사로)</h2>' +
-    '<p class="hint">사로별 만점 ' + max + '점 (설정에서 변경). 사격은 축제 일정과 별도로 체육 수업 시간에 진행하므로 언제든 입력·수정할 수 있습니다. 미입력 칸은 0점으로 계산하되 "입력 미완료"로 표시합니다.</p>' +
+    '<p class="hint">사로별 점수에 상한이 없습니다. 나온 점수를 그대로 넣으세요. 사격은 축제 일정과 별도로 체육 수업 시간에 진행하므로 언제든 입력·수정할 수 있습니다. 미입력 칸은 0점으로 계산하되 "입력 미완료"로 표시합니다.</p>' +
     '<div class="table-wrap"><table><tr><th>반</th>' + [1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<th>' + i + '사로</th>'; }).join('') + '<th>합계</th><th>상태</th></tr>' +
     CLASS_IDS.map(function (c) {
       var r = byId[c]; var arr = S.laser.scores[c] || [];
       return '<tr><td>' + badge(c) + '</td>' + [0, 1, 2, 3, 4, 5, 6].map(function (i) {
-        var v = arr[i]; var bad = v !== null && v !== undefined && v !== '' && (num(v) < 0 || num(v) > max);
-        return '<td><input type="number" inputmode="numeric" min="0" max="' + max + '" data-laser="' + c + ':' + i + '" value="' + (v === null || v === undefined ? '' : esc(v)) + '" style="' + (bad ? 'border-color:var(--danger);background:var(--danger-soft)' : '') + '"></td>';
-      }).join('') + '<td><b>' + r.sum + '</b></td><td class="small">' + (r.invalid ? '<span class="tag" style="background:var(--danger)">범위 오류</span>' : '') + (r.incomplete ? '<span class="tag">입력 미완료</span>' : '<span style="color:var(--ok)">완료</span>') + '</td></tr>';
+        var v = arr[i];
+        return '<td><input type="number" inputmode="numeric" min="0" data-laser="' + c + ':' + i + '" value="' + (v === null || v === undefined ? '' : esc(v)) + '"></td>';
+      }).join('') + '<td><b>' + r.sum + '</b></td><td class="small">' + (r.incomplete ? '<span class="tag">입력 미완료</span>' : '<span style="color:var(--ok)">완료</span>') + '</td></tr>';
     }).join('') + '</table></div></div>' +
     '<div class="card"><h2>순위</h2>' + (rows[0].active ? '' : '<p class="banner info">4개 반 모두 점수가 하나 이상 입력되면 순위 점수가 종합 집계표에 반영됩니다. (지금은 미반영)</p>') +
     '<div class="table-wrap"><table><tr><th>순위</th><th>반</th><th>합계</th><th>최고 사로</th><th>순위 결정 기준</th><th>반영 점수</th></tr>' +
@@ -1799,7 +1799,7 @@ TAB_RENDERERS.laser = function (root) {
       if (!S.laser.scores[c]) S.laser.scores[c] = [null, null, null, null, null, null, null];
       if (el.value === '') { S.laser.scores[c][i] = null; commit(); return; }
       var v = num(el.value);
-      if (v < 0 || v > max) alert('점수는 0 이상 ' + max + '점 이하여야 합니다. (입력값 ' + v + ') 값은 저장되지만 빨간색으로 표시됩니다.');
+      if (v < 0) { alert('점수는 0점 이상이어야 합니다.'); render(); return; }
       S.laser.scores[c][i] = v; commit();
     };
   });
@@ -1958,7 +1958,7 @@ TAB_RENDERERS.overall = function (root) {
       CLASS_IDS.map(function (c) { return '<label class="inline">' + badge(c) + '<input type="number" inputmode="numeric" min="1" max="4" data-ov-manual="' + c + '" value="' + (S.overall.manualRank[c] !== undefined ? S.overall.manualRank[c] : '') + '" style="max-width:70px"></label>'; }).join('') +
       '<button type="button" class="btn sm" id="btn-ov-manual-clear">지우기</button></div></div>' : '') +
     '<h3>시상 안내</h3><div class="table-wrap"><table style="max-width:700px"><tr><th>순위</th><th>반</th><th>시상</th></tr>' +
-    ov.rows.map(function (r) { var prize = ['상품권 120,000원', '상품권 90,000원', '상품권 60,000원', '러키드로우 · 참가상으로 보전'][r.rank - 1]; return '<tr class="rank' + r.rank + '"><td><b>' + r.rank + '위</b></td><td>' + badge(r.classId) + '</td><td>' + prize + '</td></tr>'; }).join('') + '</table></div></div>';
+    ov.rows.filter(function (r) { return r.rank <= 3; }).map(function (r) { var prize = ['상품권 120,000원', '상품권 90,000원', '상품권 60,000원'][r.rank - 1]; return '<tr class="rank' + r.rank + '"><td><b>' + r.rank + '위</b></td><td>' + badge(r.classId) + '</td><td>' + prize + '</td></tr>'; }).join('') + '</table></div></div>';
   root.innerHTML = html;
   prevTotals = {}; ov.rows.forEach(function (r) { prevTotals[r.classId] = r.total; });
 
@@ -2042,18 +2042,28 @@ function pickOne() {
   cls.forEach(function (c) { lp.pools[c].forEach(function (s) { all.push({ classId: c, no: s.no, name: s.name }); }); });
   return all[Math.floor(Math.random() * all.length)];
 }
+/* 설정 탭(교사용)에 보여줄 반별 당첨 현황 */
+function lotteryStatusHtml() {
+  var lp = lotteryPools();
+  var empty = CLASS_IDS.filter(function (c) { return lp.pools[c].length === 0 && (S.roster[c] || []).length > 0; });
+  var total = S.lottery.winners.length;
+  return '<div class="counts">' + CLASS_IDS.map(function (c) {
+    return '<div class="c" style="border-left:5px solid ' + esc(classById(c).color) + '"><span class="small muted">' + esc(classById(c).name) + '</span><span>당첨 <b>' + lp.wonCount[c] + '</b>명</span><span class="small muted">남은 ' + lp.pools[c].length + '명</span></div>';
+  }).join('') + '</div>' +
+  '<p class="hint" style="margin-top:8px">전체 당첨 ' + total + '명. 반별 당첨자 수 차이는 항상 1 이내로 유지됩니다.</p>' +
+  (empty.length ? '<div class="banner warn">' + empty.map(function (c) { return esc(classById(c).name); }).join(', ') + ' 반은 남은 인원이 0명이라 후보에서 제외됩니다. 이 경우에만 반별 당첨자 수 차이가 1을 넘을 수 있습니다.</div>' : '');
+}
+
 var lotteryBusy = false;
 TAB_RENDERERS.lottery = function (root) {
   var lp = lotteryPools();
   var totalLeft = CLASS_IDS.reduce(function (a, c) { return a + lp.pools[c].length; }, 0);
-  var emptyClasses = CLASS_IDS.filter(function (c) { return lp.pools[c].length === 0 && (S.roster[c] || []).length > 0; });
   var html = '<div class="card"><h2>경품 추첨 (러키드로우)</h2>' +
     '<p class="hint">설정 탭의 학생 명단에서 뽑습니다. 뽑힌 학생은 이후 추첨에서 영구 제외되며, 반별 당첨자 수가 가장 적은 반에서만 뽑아 반별 차이가 항상 1 이내로 유지됩니다.</p>' +
     '<div class="lottery-stage" id="lottery-stage"><div class="muted">남은 인원 ' + totalLeft + '명</div><div class="big" id="lottery-big">추첨 버튼을 누르세요</div><div id="lottery-sub"></div></div>' +
     '<div class="row" style="margin-top:12px;justify-content:center"><span>한 번에</span><select id="lottery-count" style="width:auto"><option value="1">1명</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명</option></select>' +
     '<button type="button" class="btn big primary" id="btn-draw" ' + (totalLeft ? '' : 'disabled') + '>추첨!</button></div>' +
-    (emptyClasses.length ? '<div class="banner warn" style="margin-top:10px">' + emptyClasses.map(function (c) { return classById(c).name; }).join(', ') + ' 반은 남은 인원이 0명이라 후보에서 제외됩니다. 이 경우에만 반별 당첨자 수 차이가 1을 넘을 수 있습니다.</div>' : '') +
-    '<div class="counts" style="margin-top:12px">' + CLASS_IDS.map(function (c) { return '<div class="c" style="border-left:5px solid ' + esc(classById(c).color) + '"><span class="small muted">' + esc(classById(c).name) + '</span><span>당첨 <b>' + lp.wonCount[c] + '</b>명</span><span class="small muted">남은 ' + lp.pools[c].length + '명</span></div>'; }).join('') + '</div></div>' +
+    '<p class="hint" style="margin-top:10px">반별 당첨 현황은 이 화면에 띄우지 않습니다. 설정 탭의 "경품 추첨 현황"에서 확인하세요.</p></div>' +
     '<div class="card"><div class="row between"><h2>당첨자 명단 (' + S.lottery.winners.length + '명)</h2><button type="button" class="btn" id="btn-lottery-csv" ' + (S.lottery.winners.length ? '' : 'disabled') + '>CSV 내려받기</button></div>' +
     '<div class="table-wrap"><table><tr><th>#</th><th>반</th><th>번호</th><th>이름</th><th>시각</th><th></th></tr>' +
     S.lottery.winners.map(function (w, i) { return '<tr><td>' + (i + 1) + '</td><td>' + badge(w.classId) + '</td><td>' + w.no + '</td><td><b>' + esc(w.name) + '</b></td><td class="small">' + esc(w.at) + '</td><td><button type="button" class="btn sm danger" data-cancel-win="' + i + '">당첨 취소</button></td></tr>'; }).join('') +
