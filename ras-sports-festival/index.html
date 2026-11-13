@@ -266,6 +266,11 @@ tr.hl { animation: hl 1.6s ease-out; }
   th, td { padding: 4px 6px; border: 1px solid #bbb; }
 }
 
+/* 표 안의 작은 버튼: 한 줄 유지, 낮은 높이 */
+td .row { flex-wrap: nowrap; justify-content: center; gap: 6px; }
+td .btn.sm.ghost { min-height: 36px; padding: 2px 8px; font-size: .85em; }
+td .btn.sm { min-height: 38px; }
+
 </style>
 </head>
 <body>
