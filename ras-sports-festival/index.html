@@ -356,10 +356,30 @@ tr.hl { animation: hl 1.7s ease-out; }
   .print-only { display: block; }
 }
 
+/* ===== 교사용 설정 잠금 ===== */
+.gear-btn {
+  position: absolute; top: 10px; right: 12px; z-index: 3;
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; background: transparent; color: var(--muted); opacity: .45; cursor: pointer;
+  border-radius: var(--r-pill); transition: opacity .15s, background-color .15s, color .15s;
+}
+.gear-btn:hover { opacity: 1; color: var(--ink); background: rgba(255, 255, 255, .08); }
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin: 18px 0 6px; }
+.pin-dot { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--line-3); }
+.pin-dot.on { background: var(--accent); border-color: var(--accent); }
+.pin-msg { text-align: center; min-height: 1.5em; color: var(--danger); font-size: .88em; font-weight: 700; }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.pin-pad .btn { width: 100%; margin: 0; min-height: 60px; justify-content: center; font-size: 1.25em; font-weight: 700; border-radius: var(--r-md); }
+.pin-pad .btn.ghost { font-size: .9em; font-weight: 600; }
+@media print { .gear-btn { display: none !important; } }
+
 </style>
 </head>
 <body>
 <header class="top">
+  <button type="button" class="gear-btn" id="btn-settings-gear" title="교사용 설정" aria-label="교사용 설정">
+    <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.67 8.84a.5.5 0 0 0 .12.64l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2Z"/></svg>
+  </button>
   <div class="hero-grid"></div>
   <svg class="hero-decor" id="hero-decor" viewBox="0 0 540 230" aria-hidden="true"></svg>
   <div class="hero-inner">
@@ -383,7 +403,6 @@ tr.hl { animation: hl 1.7s ease-out; }
 <div id="backup-banner" class="banner warn" hidden style="margin:14px 22px 0"></div>
 
 <nav class="tabs" id="tabs">
-  <button type="button" data-tab="settings">설정</button>
   <button type="button" data-tab="bad">배드민턴</button>
   <button type="button" data-tab="vol">배구</button>
   <button type="button" data-tab="laser">레이저 사격</button>
@@ -392,6 +411,7 @@ tr.hl { animation: hl 1.7s ease-out; }
   <button type="button" data-tab="lottery">경품 추첨</button>
   <button type="button" data-tab="timer">타이머</button>
   <button type="button" data-tab="schedule">일정표</button>
+  <button type="button" data-tab="settings" id="tab-btn-settings" hidden>설정</button>
 </nav>
 
 <main class="wrap">
@@ -934,7 +954,7 @@ function defaultState() {
         vol: [200, 150, 100, 70],
         laser: [100, 70, 50, 30]
       },
-      latin: true, byeMode: 'equal', byePoints: true, courts: 5, laserMax: 10,
+      latin: true, byeMode: 'equal', byePoints: true, courts: 5, laserMax: 10, pin: '1217',
       tiebreak: ['bad', 'vol', 'kin', 'laser', 'cheer'],
       fontSize: 'normal',
       timer: { r1: 7, later: 8, vol: 11, kin: 14 }
@@ -945,7 +965,7 @@ function defaultState() {
     kin: { rounds: [{}, {}, {}] },
     overall: { overrides: {}, extra: { c1: 0, c2: 0, c3: 0, c4: 0 }, cheer: { c1: 0, c2: 0, c3: 0, c4: 0 }, manualRank: {} },
     lottery: { winners: [] },
-    ui: { tab: 'settings' },
+    ui: { tab: 'bad' },
     meta: { lastBackupAt: null, lastChangeAt: null }
   };
 }
@@ -1031,7 +1051,53 @@ function closeModal() { $('#modal-bg').classList.remove('on'); $('#modal').inner
 
 /* ---------- 탭 ---------- */
 var TAB_RENDERERS = {};
+/* 설정 탭은 교사용. 비밀번호를 넣어야 열린다 (새로고침하면 다시 잠긴다) */
+var SETTINGS_UNLOCKED = false;
+function settingsPin() { var p = S.settings && S.settings.pin; return /^\d{4}$/.test(String(p)) ? String(p) : '1217'; }
+function unlockSettings() {
+  SETTINGS_UNLOCKED = true;
+  var b = document.getElementById('tab-btn-settings'); if (b) b.hidden = false;
+  showTab('settings');
+}
+function lockSettings() {
+  SETTINGS_UNLOCKED = false;
+  var b = document.getElementById('tab-btn-settings'); if (b) b.hidden = true;
+  showTab('bad');
+}
+function openPinPad() {
+  if (SETTINGS_UNLOCKED) { showTab('settings'); return; }
+  var entered = '';
+  openModal('<h2>교사용 설정</h2><p class="hint">비밀번호 네 자리를 입력하세요.</p>' +
+    '<div class="pin-dots" id="pin-dots"></div><div class="pin-msg" id="pin-msg"></div>' +
+    '<div class="pin-pad">' + [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (n) { return '<button type="button" class="btn" data-pin="' + n + '">' + n + '</button>'; }).join('') +
+    '<button type="button" class="btn ghost" data-pin-del="1">지우기</button><button type="button" class="btn" data-pin="0">0</button><button type="button" class="btn ghost" data-pin-close="1">닫기</button></div>');
+  var md = $('#modal');
+  function draw() {
+    var h = '';
+    for (var i = 0; i < 4; i++) h += '<span class="pin-dot' + (i < entered.length ? ' on' : '') + '"></span>';
+    $('#pin-dots', md).innerHTML = h;
+  }
+  function push(d) {
+    if (entered.length >= 4) return;
+    entered += d; draw();
+    if (entered.length === 4) {
+      if (entered === settingsPin()) { closeModal(); unlockSettings(); }
+      else { $('#pin-msg', md).textContent = '비밀번호가 맞지 않습니다.'; entered = ''; setTimeout(draw, 250); }
+    }
+  }
+  $all('[data-pin]', md).forEach(function (b) { b.onclick = function () { $('#pin-msg', md).textContent = ''; push(b.dataset.pin); }; });
+  $('[data-pin-del]', md).onclick = function () { entered = entered.slice(0, -1); draw(); };
+  $('[data-pin-close]', md).onclick = closeModal;
+  var onKey = function (e) {
+    if (!$('#modal-bg').classList.contains('on')) { document.removeEventListener('keydown', onKey); return; }
+    if (/^[0-9]$/.test(e.key)) { $('#pin-msg', md).textContent = ''; push(e.key); }
+    else if (e.key === 'Backspace') { entered = entered.slice(0, -1); draw(); }
+  };
+  document.addEventListener('keydown', onKey);
+  draw();
+}
 function showTab(name) {
+  if (name === 'settings' && !SETTINGS_UNLOCKED) { openPinPad(); return; }
   S.ui.tab = name;
   $all('nav.tabs button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
   $all('section.tab').forEach(function (s) { s.classList.toggle('active', s.id === 'tab-' + name); });
@@ -1120,7 +1186,10 @@ TAB_RENDERERS.settings = function (root) {
     '<label class="inline"><span style="min-width:9em">킨볼</span><input type="number" inputmode="numeric" data-timer="kin" value="' + st.timer.kin + '"></label>' +
     '</div>' +
 
-    '<div class="card"><h2>4. 데이터 관리</h2>' +
+    '<div class="card"><h2>4. 데이터 관리 · 잠금</h2>' +
+    '<div class="row" style="margin-bottom:10px"><button type="button" class="btn" id="btn-lock-settings">설정 잠그고 나가기</button>' +
+    '<label class="inline"><span class="small">설정 비밀번호(숫자 4자리)</span><input type="text" inputmode="numeric" maxlength="4" id="set-pin" value="' + esc(settingsPin()) + '" style="max-width:110px"></label></div>' +
+    '<p class="hint" style="margin-bottom:12px">학생이 설정을 열지 못하게 가려 두는 장치입니다. 기기를 잠그는 보안 기능은 아니므로, 태블릿을 두고 자리를 비울 때는 화면을 꺼 주세요.</p>' +
     '<p class="hint">모든 입력은 이 기기의 브라우저에 두 곳(localStorage와 IndexedDB)으로 자동 저장되고, 변경 때마다 복구 지점이 남습니다. 축제 4일 동안 같은 기기·같은 브라우저로 열면 그대로 이어집니다. 다른 기기로 옮기거나 만약을 대비해 하루 한 번 JSON 파일로 백업하세요. 외부로 전송되는 데이터는 없습니다.</p>' +
     '<p class="small" style="margin:6px 0"><b>마지막 백업:</b> ' + esc(S.meta && S.meta.lastBackupAt ? new Date(S.meta.lastBackupAt).toLocaleString('ko-KR') : '없음') + '</p>' +
     '<div class="row" style="margin:10px 0"><button type="button" class="btn primary" id="btn-export-json">JSON 전체 내보내기</button>' +
@@ -1186,6 +1255,13 @@ TAB_RENDERERS.settings = function (root) {
     }, 30);
   };
   bindRosterEvents(root);
+  var lockBtn = $('#btn-lock-settings', root); if (lockBtn) lockBtn.onclick = lockSettings;
+  var pinIn = $('#set-pin', root);
+  if (pinIn) pinIn.onchange = function () {
+    var v = pinIn.value.replace(/\D/g, '');
+    if (v.length !== 4) { alert('비밀번호는 숫자 4자리여야 합니다.'); render(); return; }
+    S.settings.pin = v; commit(); alert('설정 비밀번호를 ' + v + '(으)로 바꿨습니다.');
+  };
   if (typeof renderRestorePoints === 'function') renderRestorePoints($('#snap-list', root));
 };
 
@@ -2532,6 +2608,7 @@ function renderHeroDecor() {
   $('#btn-scoreboard').onclick = openScoreboard;
   $('#btn-scoreboard-close').onclick = closeScoreboard;
   $('#btn-backup-now').onclick = exportJson;
+  $('#btn-settings-gear').onclick = openPinPad;
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); if ($('#scoreboard').classList.contains('on')) closeScoreboard(); } });
   $('#modal-bg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeModal(); });
   ensureTimers();
@@ -2545,7 +2622,9 @@ function renderHeroDecor() {
   setupOffline();
   // localStorage가 비었으면 IndexedDB 복사본으로 복구한 뒤 화면을 그린다
   restoreFromMirrorIfNeeded().then(function (restored) {
-    showTab(S.ui.tab || 'settings');
+    var startTab = S.ui.tab || 'bad';
+    if (startTab === 'settings') startTab = 'bad';   // 설정은 잠긴 상태로 시작
+    showTab(startTab);
     updateBackupBanner();
     if (restored) alert('브라우저 저장소가 비어 있어 보조 저장소(IndexedDB)의 복사본에서 데이터를 복구했습니다.');
   });
